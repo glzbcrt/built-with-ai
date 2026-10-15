@@ -8,3 +8,4 @@ This repository is a place to explore ideas and make them easier to understand. 
 
 - [Distribution](./math/distribution-lab.html)
 - [Percentile](./math/percentile-calculator.html)
+- [Chances](./math/chance-lab.html)
