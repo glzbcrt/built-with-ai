@@ -1,4 +1,4 @@
-# built-with-ai
+# Built with AI using Copilot, ChatGPT or Claude
 
 🧠 A collection of artifacts created with AI to explain concepts.
 
