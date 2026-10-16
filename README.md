@@ -17,3 +17,4 @@ This repository is a place to explore ideas and make them easier to understand. 
 - [Tokenization](./ai/token-lab.html)
 - [Sequence Predictor](./ai/sequence-predictor.html)
 - [Speculative Decoding](./ai/speculative-decoding.html)
+- [Number Representations](./ai/number-lab.html)
