@@ -6,11 +6,11 @@ This repository is a place to explore ideas and make them easier to understand. 
 
 ## Math
 
+- [Numbers](./math/number-lab.html)
+- [Stats](./math/stat-studio.html)
 - [Distribution](./math/distribution-lab.html)
 - [Percentile](./math/percentile-calculator.html)
 - [Chances](./math/chance-lab.html)
-- [Stats](./math/stat-studio.html)
-- [Number Lab](./math/number-lab.html)
 
 ## AI
 
