@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speculative decoding, hands on</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f6f9;--panel:#fff;--ink:#18212d;--mute:#5d6b7c;--line:#d5dce6;--draft:#2f64d0;--draftbg:#e4ecfb;--ok:#177a53;--okbg:#dff4ea;--bad:#c23a32;--badbg:#fbe6e4;--tgt:#8a5a00;--tgtbg:#fbefd3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161e;--panel:#18212c;--ink:#e6ecf4;--mute:#97a5b8;--line:#2d3a4a;--draft:#7ba3f5;--draftbg:#1d2d4d;--ok:#4cc592;--okbg:#14382b;--bad:#f07a72;--badbg:#411f1d;--tgt:#e7b34f;--tgtbg:#3d2f10}}
+:root[data-theme="dark"]{--bg:#10161e;--panel:#18212c;--ink:#e6ecf4;--mute:#97a5b8;--line:#2d3a4a;--draft:#7ba3f5;--draftbg:#1d2d4d;--ok:#4cc592;--okbg:#14382b;--bad:#f07a72;--badbg:#411f1d;--tgt:#e7b34f;--tgtbg:#3d2f10}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:1.8rem;line-height:1.2;margin:0 0 6px;font-weight:600}
+h2{font-size:1.15rem;margin:0 0 6px;font-weight:600}
+p{margin:0 0 12px;max-width:68ch}
+.lead{color:var(--mute)}
+.tabs{display:flex;gap:6px;margin:20px 0 16px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:8px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--draft);outline-offset:2px}
+button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.go{background:var(--draft);border-color:var(--draft);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+section{display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+section.on{display:block}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.lab{font-size:.85rem;color:var(--mute);width:100%;margin-top:10px}
+.tok{font-family:"IBM Plex Mono",monospace;font-size:.95rem;padding:4px 9px;border-radius:6px;border:1px solid var(--line);background:var(--bg);white-space:pre}
+.tok.pr{color:var(--mute)}
+.tok.cm{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.tok.dr{background:var(--draftbg);border-color:var(--draft);color:var(--draft)}
+.tok.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.tok.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.tok.drop{opacity:.45;text-decoration:line-through}
+.tok.fix{background:var(--tgtbg);border-color:var(--tgt);color:var(--tgt)}
+.cap{background:var(--bg);border-left:3px solid var(--draft);padding:10px 12px;border-radius:4px;margin:14px 0;min-height:4.6em}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 22px;margin:12px 0}
+.ctl label{display:block;font-size:.9rem}
+.ctl b{font-family:"IBM Plex Mono",monospace;font-weight:500}
+input[type=range]{width:100%}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat span{display:block;font-size:.8rem;color:var(--mute)}
+.stat strong{font:500 1.3rem "IBM Plex Mono",monospace}
+.bars{display:grid;gap:6px;margin:8px 0}
+.bar{display:grid;grid-template-columns:2.2rem 1fr 3.6rem;gap:8px;align-items:center;font-family:"IBM Plex Mono",monospace;font-size:.85rem}
+.bar i{display:block;height:14px;border-radius:3px;min-width:1px}
+.scroll{overflow-x:auto}
+.legend{font-size:.85rem;color:var(--mute)}
+svg text{fill:var(--mute);font:11px "IBM Plex Mono",monospace}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.q{border-top:1px solid var(--line);margin-top:18px;padding-top:12px}
+.q button{margin:4px 6px 4px 0}
+.fb{margin-top:6px;min-height:1.5em}
+</style>
+</head>
+<body>
+<main>
+<h1>Speculative decoding, hands on</h1>
+<p class="lead">A small draft model guesses several tokens ahead. The big target model checks all the guesses in one forward pass and keeps the ones it agrees with. Three small labs below let you see why that is faster and why the output stays correct.</p>
+
+<div class="tabs" role="tablist">
+<button class="on" data-tab="sim">1. Step through it</button>
+<button data-tab="rej">2. Rejection sampling</button>
+<button data-tab="spd">3. Speedup</button>
+<button data-tab="quiz">4. Check yourself</button>
+</div>
+
+<section id="sim" class="on">
+<h2>Draft, verify, commit</h2>
+<p>The target model wants to produce the sentence below. Press the button to move through one round. Each round costs one pass of the big model.</p>
+<div class="ctl">
+<label>Draft length k: <b id="kv">4</b><input id="k" type="range" min="1" max="8" value="4"></label>
+<label>Chance each draft token is right: <b id="av">70%</b><input id="a" type="range" min="10" max="99" value="70"></label>
+</div>
+<div class="lab">Text so far (grey = prompt, green = accepted output)</div>
+<div class="row" id="out"></div>
+<div class="lab">Draft model guesses</div>
+<div class="row" id="dr"><span class="legend">Nothing drafted yet.</span></div>
+<div class="lab">Target model verdict at each position</div>
+<div class="row" id="vr"><span class="legend">Waiting for a draft.</span></div>
+<div class="cap" id="cap">Press <b>Draft</b>. The small model will write k tokens one after another, which is cheap.</div>
+<div class="row"><button class="go" id="next">Draft</button><button id="rst">Reset</button></div>
+<div class="stats">
+<div class="stat"><span>Tokens produced</span><strong id="s1">0</strong></div>
+<div class="stat"><span>Big-model passes</span><strong id="s2">0</strong></div>
+<div class="stat"><span>Tokens per pass</span><strong id="s3">-</strong></div>
+<div class="stat"><span>Normal decoding needs</span><strong id="s4">0</strong></div>
+</div>
+<p class="legend" style="margin-top:10px">Try a low accuracy like 20%. Notice you still get at least one token per pass, so you never do worse than normal decoding in passes.</p>
+</section>
+
+<section id="rej">
+<h2>Why sampling stays exact</h2>
+<p>With sampling, the draft model has its own distribution q and the target has p. Set both over four tokens. The draft proposes x from q. Accept it with probability min(1, p(x)/q(x)). If rejected, resample from the leftover distribution max(0, p - q), normalized.</p>
+<div class="two">
+<div><div class="lab" style="margin-top:0">Draft q (drag to change)</div><div id="qs"></div></div>
+<div><div class="lab" style="margin-top:0">Target p (drag to change)</div><div id="ps"></div></div>
+</div>
+<div class="lab">Accept chance per token, min(1, p/q)</div>
+<div class="bars" id="acc"></div>
+<div class="lab">Residual distribution used after a rejection</div>
+<div class="bars" id="res"></div>
+<p id="rtxt" class="cap"></p>
+<div class="row"><button class="go" id="samp">Run 20,000 trials</button></div>
+<div class="lab">Measured distribution of final tokens (should match p)</div>
+<div class="bars" id="emp"></div>
+</section>
+
+<section id="spd">
+<h2>When does it pay off?</h2>
+<p>Per round, the expected number of tokens is (1 - a<sup>k+1</sup>) / (1 - a), where a is the per-token acceptance rate. The round costs one target pass plus k draft steps, each costing a fraction c of a target pass.</p>
+<div class="ctl">
+<label>Acceptance a: <b id="sa">0.80</b><input id="a2" type="range" min="30" max="99" value="80"></label>
+<label>Draft cost c: <b id="sc">0.05</b><input id="c2" type="range" min="1" max="50" value="5"></label>
+<label>Draft length k: <b id="sk">4</b><input id="k2" type="range" min="1" max="12" value="4"></label>
+</div>
+<div class="scroll"><svg id="chart" viewBox="0 0 560 250" width="100%" role="img" aria-label="Speedup versus draft length"></svg></div>
+<p class="cap" id="stxt"></p>
+<p class="legend">Real systems also lose gain at large batch sizes, because the target pass stops being memory bound. This model ignores that.</p>
+</section>
+
+<section id="quiz">
+<h2>Check yourself</h2>
+<div id="qz"></div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+ document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.tab));
+ if(b.dataset.tab==='spd')drawSpd();
+});
+const tk=(t,c)=>`<span class="tok ${c||''}">${t}</span>`;
+
+/* ---------- Lab 1 ---------- */
+const T="The capital of France is Paris , a city known for the Eiffel Tower and its famous museums .".split(" ");
+const PR=5, WRONG=["the","big","and","of","in","very","old"];
+let S;
+function reset(){S={pos:PR,phase:0,passes:0,draft:[],flags:[],n:0,done:false};render();}
+function render(){
+ $('#out').innerHTML=T.slice(0,PR).map(t=>tk(t,'pr')).join('')+T.slice(PR,S.pos).map(t=>tk(t,'cm')).join('');
+ const ph=S.phase;
+ $('#dr').innerHTML=ph===0?'<span class="legend">Nothing drafted yet.</span>':S.draft.map((t,i)=>{
+  let c='dr';
+  if(ph>=2){c=i<S.n?'ok':i===S.n?'bad':'dr drop';}
+  return tk(t,c);}).join('');
+ $('#vr').innerHTML=ph===0?'<span class="legend">Waiting for a draft.</span>':ph===1?'<span class="legend">Not verified yet.</span>':S.draft.map((t,i)=>{
+  if(i<S.n)return tk('✓ keep','ok');
+  if(i===S.n)return tk('✗ '+T[S.pos+i]+' instead','fix');
+  return tk('skipped','drop');}).join('')+(S.n===S.draft.length&&S.pos+S.draft.length<T.length?tk('+ bonus '+T[S.pos+S.draft.length],'fix'):'');
+ const made=S.pos-PR;
+ $('#s1').textContent=made;$('#s2').textContent=S.passes;
+ $('#s3').textContent=S.passes?(made/S.passes).toFixed(2):'-';$('#s4').textContent=made;
+ const b=$('#next');
+ if(S.done){b.textContent='Finished';b.disabled=true;}
+ else{b.disabled=false;b.textContent=['Draft','Verify with target','Commit'][ph];}
+}
+$('#next').onclick=()=>{
+ const k=+$('#k').value,a=+$('#a').value/100;
+ if(S.phase===0){
+  const kk=Math.min(k,T.length-S.pos);
+  S.flags=Array.from({length:kk},()=>Math.random()<a);
+  S.n=S.flags.findIndex(f=>!f);if(S.n<0)S.n=kk;
+  S.draft=S.flags.map((f,i)=>{if(f)return T[S.pos+i];
+   const o=WRONG.filter(w=>w!==T[S.pos+i]);return o[Math.floor(Math.random()*o.length)];});
+  S.phase=1;
+  $('#cap').innerHTML=`The draft model produced <b>${kk}</b> tokens one at a time. Each guess was conditioned on the previous <i>guess</i>, not on anything the target approved. That is the dependency problem.`;
+ }else if(S.phase===1){
+  S.phase=2;
+  const kk=S.draft.length;
+  $('#cap').innerHTML=`One target pass over prompt + ${kk} drafts gives its prediction at every position at once (causal masking). Position ${S.n+1} is the first disagreement${S.n===kk?' (none, all accepted, so the pass also yields a bonus token)':''}. Every prediction after a mismatch was conditioned on a wrong prefix, so it is thrown away.`;
+ }else{
+  const kk=S.draft.length;
+  S.pos+=S.n+1;
+  if(S.pos>T.length)S.pos=T.length;
+  S.passes++;S.phase=0;S.draft=[];
+  $('#cap').innerHTML=`Committed. This round gave <b>${S.n<kk?S.n+1:Math.min(kk+1,T.length-(S.pos-kk-1))}</b> token(s) for one target pass. Draft again from the new end of the text.`;
+  if(S.pos>=T.length){S.done=true;$('#cap').innerHTML+=' The sentence is complete.';}
+ }
+ render();
+};
+$('#rst').onclick=()=>{reset();$('#cap').innerHTML='Press <b>Draft</b>. The small model will write k tokens one after another, which is cheap.';};
+$('#k').oninput=e=>$('#kv').textContent=e.target.value;
+$('#a').oninput=e=>$('#av').textContent=e.target.value+'%';
+reset();
+
+/* ---------- Lab 2 ---------- */
+const N=["A","B","C","D"];let qw=[5,3,1,1],pw=[2,2,4,2];
+const norm=w=>{const s=w.reduce((x,y)=>x+y,0)||1;return w.map(x=>x/s)};
+function sliders(id,arr){
+ $(id).innerHTML=N.map((n,i)=>`<div class="bar" style="grid-template-columns:2.2rem 1fr"><span>${n}</span><input type="range" min="0" max="10" value="${arr[i]}" aria-label="${n}"></div>`).join('');
+ $(id).querySelectorAll('input').forEach((el,i)=>el.oninput=()=>{arr[i]=+el.value;calc();});
+}
+function bars(id,v,col,fmt){
+ $(id).innerHTML=N.map((n,i)=>`<div class="bar"><span>${n}</span><i style="width:${Math.min(100,v[i]*100)}%;background:${col}"></i><span>${(v[i]*100).toFixed(1)}%</span></div>`).join('');
+}
+function calc(){
+ const q=norm(qw),p=norm(pw);
+ const acc=q.map((x,i)=>x?Math.min(1,p[i]/x):0);
+ const r=p.map((x,i)=>Math.max(0,x-q[i]));const rs=r.reduce((a,b)=>a+b,0);
+ const rn=rs?r.map(x=>x/rs):r;
+ const overall=p.reduce((a,x,i)=>a+Math.min(x,q[i]),0);
+ bars('#acc',acc,'var(--ok)');bars('#res',rn,'var(--tgt)');
+ $('#rtxt').innerHTML=`Overall chance a draft token is accepted: <b>${(overall*100).toFixed(1)}%</b> (the overlap between p and q). Tokens the draft over-proposes (q &gt; p) get rejected often. Rejections are resampled only toward tokens the draft under-proposes (p &gt; q), which exactly fills the gap.`;
+}
+$('#samp').onclick=()=>{
+ const q=norm(qw),p=norm(pw);
+ const r=p.map((x,i)=>Math.max(0,x-q[i]));const rs=r.reduce((a,b)=>a+b,0)||1;
+ const draw=d=>{let u=Math.random(),c=0;for(let i=0;i<d.length;i++){c+=d[i];if(u<c)return i;}return d.length-1;};
+ const rn=r.map(x=>x/rs),cnt=[0,0,0,0],M=20000;
+ for(let t=0;t<M;t++){const x=draw(q);
+  cnt[Math.random()<Math.min(1,p[x]/q[x])?x:draw(rn)]++;}
+ bars('#emp',cnt.map(c=>c/M),'var(--draft)');
+};
+sliders('#qs',qw);sliders('#ps',pw);calc();bars('#emp',[0,0,0,0],'var(--draft)');
+
+/* ---------- Lab 3 ---------- */
+const E=(a,k)=>(1-Math.pow(a,k+1))/(1-a);
+const SP=(a,k,c)=>E(a,k)/(1+k*c);
+function drawSpd(){
+ const a=+$('#a2').value/100,c=+$('#c2').value/100,k=+$('#k2').value;
+ $('#sa').textContent=a.toFixed(2);$('#sc').textContent=c.toFixed(2);$('#sk').textContent=k;
+ const ys=[];for(let i=1;i<=12;i++)ys.push(SP(a,i,c));
+ const ymax=Math.max(2,Math.ceil(Math.max(...ys,1)*1.1)),X=i=>50+(i-1)*(490/11),Y=v=>220-(v/ymax)*200;
+ let g='';
+ for(let v=0;v<=ymax;v++)g+=`<line x1="50" x2="540" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="30" y="${Y(v)+4}">${v}x</text>`;
+ for(let i=1;i<=12;i++)g+=`<text x="${X(i)-4}" y="238">${i}</text>`;
+ g+=`<line x1="50" x2="540" y1="${Y(1)}" y2="${Y(1)}" stroke="var(--bad)" stroke-dasharray="4 3"/>`;
+ g+=`<polyline fill="none" stroke="var(--draft)" stroke-width="2.5" points="${ys.map((y,i)=>X(i+1)+','+Y(y)).join(' ')}"/>`;
+ const best=ys.indexOf(Math.max(...ys))+1;
+ g+=`<circle cx="${X(best)}" cy="${Y(ys[best-1])}" r="5" fill="var(--ok)"/><circle cx="${X(k)}" cy="${Y(ys[k-1])}" r="6" fill="none" stroke="var(--ink)" stroke-width="2"/>`;
+ $('#chart').innerHTML=g;
+ const e=E(a,k),s=SP(a,k,c);
+ $('#stxt').innerHTML=`At k=${k}: <b>${e.toFixed(2)}</b> tokens per round, each round costs <b>${(1+k*c).toFixed(2)}</b> target passes, so speedup is <b>${s.toFixed(2)}x</b>${s<1?' (slower than normal decoding)':''}. Best k here is <b>${best}</b> (green dot, ${ys[best-1].toFixed(2)}x). The red dashed line is normal decoding.`;
+}
+['a2','c2','k2'].forEach(i=>$('#'+i).oninput=drawSpd);
+
+/* ---------- Quiz ---------- */
+const Q=[
+["Why can the target verify k drafts in about the cost of one token?","At small batch sizes decoding is limited by loading weights, so extra tokens in the same pass are nearly free.",["It skips the attention layers","At small batch sizes decoding is limited by loading weights, so extra tokens in the same pass are nearly free.","It only checks the last token"],1],
+["A draft is rejected at position 3 of 5. What happens to positions 4 and 5?","They are discarded, because their target predictions assumed a wrong prefix.",["They are kept if they look plausible","They are discarded, because their target predictions assumed a wrong prefix.","They are re-verified in a second pass"],1],
+["Does rejection sampling change the output distribution?","No. Accept with min(1, p/q) and resample from the residual gives exactly p.",["Yes, slightly toward the draft model","No. Accept with min(1, p/q) and resample from the residual gives exactly p.","Only when k is large"],1],
+["What is the worst case in tokens per target pass?","One token, because every pass yields a corrected or bonus token.",["Zero tokens","One token, because every pass yields a corrected or bonus token.","k tokens"],1]
+];
+$('#qz').innerHTML=Q.map((q,i)=>`<div class="${i?'q':''}"><p><b>${q[0]}</b></p>${q[2].map((o,j)=>`<button data-q="${i}" data-j="${j}">${o}</button>`).join('')}<div class="fb" id="fb${i}"></div></div>`).join('');
+$('#qz').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ const i=+b.dataset.q,ok=+b.dataset.j===Q[i][3];
+ $('#fb'+i).innerHTML=ok?`<span style="color:var(--ok)">Correct.</span> ${Q[i][1]}`:`<span style="color:var(--bad)">Not quite.</span> Try another option.`;};
+</script>
+</body>
+</html>

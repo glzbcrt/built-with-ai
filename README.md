@@ -10,3 +10,8 @@ This repository is a place to explore ideas and make them easier to understand. 
 - [Percentile](./math/percentile-calculator.html)
 - [Chances](./math/chance-lab.html)
 - [Stats](./math/stat-studio.html)
+
+## AI
+
+- [Sequence Predictor](./ai/sequence-predictor.html)
+- [Speculative Decoding](./ai/speculative-decoding.html)
