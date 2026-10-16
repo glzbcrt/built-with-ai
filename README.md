@@ -10,6 +10,7 @@ This repository is a place to explore ideas and make them easier to understand. 
 - [Percentile](./math/percentile-calculator.html)
 - [Chances](./math/chance-lab.html)
 - [Stats](./math/stat-studio.html)
+- [Number Lab](./math/number-lab.html)
 
 ## AI
 
