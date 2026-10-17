@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prompt Cache Explorer</title>
+<style>
+:root{--bg:#faf9f6;--surface:#fff;--text:#1f2328;--muted:#656d76;--border:#d8d6cf;
+--hit-bg:#c9f0d4;--hit-fg:#0b4a1f;--hit-b:#1a9a45;--miss-bg:#ffe3c2;--miss-fg:#6b3500;--miss-b:#d9731a;--accent:#4c5bd4;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16181d;--surface:#1f2229;--text:#e6e8eb;--muted:#9aa2ad;--border:#363b45;
+--hit-bg:#12391f;--hit-fg:#a6f0bf;--hit-b:#3ec96f;--miss-bg:#43290e;--miss-fg:#ffd3a1;--miss-b:#f0914a;--accent:#8b97ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16181d;--surface:#1f2229;--text:#e6e8eb;--muted:#9aa2ad;--border:#363b45;
+--hit-bg:#12391f;--hit-fg:#a6f0bf;--hit-b:#3ec96f;--miss-bg:#43290e;--miss-fg:#ffd3a1;--miss-b:#f0914a;--accent:#8b97ff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){.grid{grid-template-columns:3fr 2fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:0}
+h2{font-size:1rem;margin:0 0 10px}
+textarea{width:100%;min-height:120px;resize:vertical;font:15px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px}
+textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:7px 12px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.primary{color:#101225}}
+button:hover{filter:brightness(.95)}
+.presets button{font-size:.85rem;padding:5px 9px}
+label.bs{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:.9rem;margin-left:auto}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0;font-size:.9rem}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.sw.hit{background:var(--hit-bg);border:2px solid var(--hit-b)}
+.sw.miss{background:var(--miss-bg);border:2px dashed var(--miss-b)}
+.out{font:15px/2 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:56px}
+.t{padding:2px 0;border-radius:3px}
+.t.hit{background:var(--hit-bg);color:var(--hit-fg);box-shadow:inset 0 -3px 0 var(--hit-b)}
+.t.miss{background:var(--miss-bg);color:var(--miss-fg);box-shadow:inset 0 -3px 0 var(--miss-b);text-decoration:underline dashed var(--miss-b) 1px;text-underline-offset:5px}
+.t.bs{border-left:2px solid var(--muted);margin-left:1px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
+.stat{border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.stat b{display:block;font-size:1.3rem}
+.stat span{color:var(--muted);font-size:.8rem}
+.stat.hit{border-color:var(--hit-b)}.stat.miss{border-color:var(--miss-b)}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;margin-top:12px;background:var(--border)}
+.bar i{display:block;height:100%}
+.bar .h{background:var(--hit-b)}.bar .m{background:var(--miss-b)}
+.verdict{font-weight:600;margin:0 0 8px}
+.note{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+ul.tree,ul.tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--border)}
+ul.tree{padding-left:0;border:0}
+.node{display:inline-block;margin:2px 0;padding:2px 7px;border-radius:6px;border:1px solid var(--border);font:13px ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.node.new{background:var(--miss-bg);border:1px dashed var(--miss-b);color:var(--miss-fg)}
+.node.hit{background:var(--hit-bg);border:1px solid var(--hit-b);color:var(--hit-fg)}
+.badge{font:600 11px system-ui;margin-left:6px;opacity:.85}
+.empty{color:var(--muted);font-style:italic}
+details{margin-top:14px;color:var(--muted);font-size:.92rem}
+summary{cursor:pointer;color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>Prompt Cache Explorer</h1>
+<p class="sub">LLM providers can reuse the work already done for a prompt’s <b>beginning</b>. Type prompts, press Check, and see which parts came from the cache.</p>
+
+<div class="grid">
+<div>
+<section class="card">
+<h2>1 · Write a prompt</h2>
+<textarea id="inp" placeholder="Type a prompt here…" spellcheck="false"></textarea>
+<div class="row presets" id="presets"></div>
+<div class="row">
+<button class="primary" id="check">Check prompt</button>
+<button id="reset">Reset cache</button>
+<label class="bs">Block size
+<input type="range" id="bs" min="1" max="8" value="1"><b id="bsv">1</b> tokens</label>
+</div>
+</section>
+
+<section class="card" style="margin-top:16px">
+<h2>2 · Result</h2>
+<div class="legend">
+<span><i class="sw hit"></i><b>Cached</b> — read from cache, not recomputed</span>
+<span><i class="sw miss"></i><b>Not cached</b> — computed now, then stored</span>
+</div>
+<div id="verdict" class="verdict"></div>
+<div class="out" id="out"><span class="empty">Your prompt will appear here, colored by cache status.</span></div>
+<div class="bar" id="bar" hidden><i class="h" id="barH"></i><i class="m" id="barM"></i></div>
+<div class="stats" id="stats" hidden>
+<div class="stat hit"><b id="sH">0</b><span>cached tokens</span></div>
+<div class="stat miss"><b id="sM">0</b><span>computed tokens</span></div>
+<div class="stat"><b id="sP">0%</b><span>of prompt cached</span></div>
+<div class="stat"><b id="sC">0%</b><span>input cost saved*</span></div>
+</div>
+<p class="note" id="tail"></p>
+<p class="note">*Illustrative: cached tokens billed at 10% of the normal input price. Real prices vary by provider.</p>
+</section>
+</div>
+
+<section class="card">
+<h2>The cache</h2>
+<p class="note" style="margin:0 0 10px">Each box is one block of tokens, stored together with <i>everything before it</i>. Boxes nested under another extend that prefix.</p>
+<div id="tree"><span class="empty">Empty — check a prompt to fill it.</span></div>
+<p class="note" id="count"></p>
+<details open>
+<summary>How it works</summary>
+<p>The model processes a prompt token by token, building internal state (the KV cache) for each one. If a new prompt starts with <b>exactly</b> the same tokens as an earlier one, that state can be reused instead of recomputed.</p>
+<p>Two consequences you can test: (1) only a shared <b>prefix</b> counts — an identical sentence in the middle of a prompt gets no cache hit if anything before it differs, and (2) caching works in blocks (try the slider): a partial final block is stored, but only an identical prompt can reuse it. At block size 1 it is a pure token-by-token prefix match.</p>
+<p>Practical tip: put stable content (system prompt, documents, examples) first and the changing question last.</p>
+</details>
+</section>
+</div>
+</main>
+
+<script>
+(function(){
+var SYS="You are a helpful assistant for Contoso Bank. Answer politely and keep answers short. ";
+var PRESETS=[
+["System prompt + question A", SYS+"Question: How do I reset my password?"],
+["Same system prompt + question B", SYS+"Question: What are your opening hours?"],
+["Different system prompt, same question", "You are a pirate assistant for Contoso Bank. Answer politely and keep answers short. Question: What are your opening hours?"],
+["Exact repeat of A", SYS+"Question: How do I reset my password?"]
+];
+var cache=new Map(), roots=[], added=new Set(), hitKeys=new Set();
+var $=function(id){return document.getElementById(id)};
+var inp=$("inp"), bs=$("bs");
+
+function tokenize(s){return s.match(/\s*[\p{L}\p{N}_]+|\s*[^\p{L}\p{N}_\s]|\s+/gu)||[]}
+function B(){return +bs.value}
+function key(toks,end){return B()+"|"+toks.slice(0,end).join("\u0001")}
+
+function check(){
+  var text=inp.value; if(!text.trim()) return;
+  var toks=tokenize(text), b=B(), nb=Math.ceil(toks.length/b), hit=0, n=toks.length;
+  var E=function(i){return Math.min(i*b,n)};
+  added=new Set(); hitKeys=new Set();
+  for(var i=1;i<=nb;i++){
+    var k=key(toks,E(i));
+    if(cache.has(k)){hit=i;hitKeys.add(k);cache.get(k).hits++;} else break;
+  }
+  for(var j=hit+1;j<=nb;j++){
+    var kk=key(toks,E(j)), parent=j===1?null:key(toks,E(j-1));
+    var node={text:toks.slice((j-1)*b,E(j)).join(""),hits:0,children:[]};
+    cache.set(kk,node); added.add(kk);
+    if(parent) cache.get(parent).children.push(node); else roots.push(node);
+    node.key=kk;
+  }
+  renderResult(toks,E(hit),n);
+  renderTree();
+}
+
+function renderResult(toks,hitTok,fullTok){
+  var out=$("out"); out.textContent="";
+  toks.forEach(function(t,i){
+    var s=document.createElement("span");
+    s.className="t "+(i<hitTok?"hit":"miss")+(i%B()===0?" bs":"");
+    s.textContent=t;
+    s.title=i<hitTok?"Cached":(i<fullTok?"Computed, now stored":"Computed, now stored");
+    out.appendChild(s);
+  });
+  var n=toks.length, m=n-hitTok, pct=n?Math.round(hitTok/n*100):0;
+  var saved=n?Math.round(hitTok*0.9/n*100):0;
+  $("sH").textContent=hitTok; $("sM").textContent=m; $("sP").textContent=pct+"%"; $("sC").textContent=saved+"%";
+  $("barH").style.width=(hitTok/n*100)+"%"; $("barM").style.width=(m/n*100)+"%";
+  $("bar").hidden=false; $("stats").hidden=false;
+  var v=$("verdict");
+  if(hitTok===0) v.textContent="✗ Cache miss — nothing in this prompt was cached. All "+n+" tokens were computed and the prompt is now stored in the cache.";
+  else if(hitTok===n) v.textContent="✓ Full cache hit — all "+n+" tokens came from the cache.";
+  else v.textContent="◐ Partial hit — the first "+hitTok+" tokens came from the cache; the remaining "+m+" were computed"+(fullTok>hitTok?" and are now stored.":".");
+  var tail=n%B();
+  $("tail").textContent=tail>0?"The last "+tail+" token"+(tail>1?"s":"")+" form a partial block (size "+B()+"). It is stored, but only an identical prompt can hit it; a longer prompt sees a different block there.":"";
+}
+
+function renderTree(){
+  var host=$("tree"); host.textContent="";
+  if(!roots.length){host.innerHTML='<span class="empty">Empty — check a prompt to fill it.</span>';$("count").textContent="";return}
+  host.appendChild(build(roots,true));
+  $("count").textContent=cache.size+" block"+(cache.size>1?"s":"")+" stored.";
+}
+function build(nodes,top){
+  var ul=document.createElement("ul"); if(top) ul.className="tree";
+  nodes.forEach(function(n){
+    var li=document.createElement("li"), sp=document.createElement("span"), isNew=added.has(n.key), isHit=hitKeys.has(n.key);
+    sp.className="node"+(isNew?" new":isHit?" hit":"");
+    sp.textContent=n.text;
+    var bd=document.createElement("span"); bd.className="badge";
+    bd.textContent=isNew?"+ NEW":isHit?"✓ HIT":(n.hits?"· "+n.hits+" hit"+(n.hits>1?"s":""):"");
+    sp.appendChild(bd); li.appendChild(sp);
+    if(n.children.length) li.appendChild(build(n.children,false));
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
+function resetAll(){cache=new Map();roots=[];added=new Set();hitKeys=new Set();renderTree();
+  $("out").innerHTML='<span class="empty">Your prompt will appear here, colored by cache status.</span>';
+  $("bar").hidden=true;$("stats").hidden=true;$("verdict").textContent="";$("tail").textContent="";}
+
+PRESETS.forEach(function(p){
+  var b=document.createElement("button"); b.textContent=p[0]; b.type="button";
+  b.onclick=function(){inp.value=p[1];inp.focus()}; $("presets").appendChild(b);
+});
+$("check").onclick=check;
+$("reset").onclick=resetAll;
+bs.oninput=function(){$("bsv").textContent=bs.value;resetAll()};
+inp.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key==="Enter")check()});
+})();
+</script>
+</body>
+</html>
