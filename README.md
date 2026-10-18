@@ -57,3 +57,11 @@ See how AI number formats trade precision for storage space. Enter a value, comp
 ### [🗃️ Prompt Cache Explorer](./ai/prompt-cache-explorer.html)
 
 See how language models can reuse computation when prompts share the same beginning. Compare prompts to explore cached prefixes, token blocks, and how cache reuse can reduce repeated work.
+
+## 🗄️ Data & Storage
+
+Get hands-on with the ways data is organized and accessed, and see how a storage choice can change the work needed to answer a query.
+
+### [📚 Row vs. Column Storage Lab](./database/row-vs-column.html)
+
+Create and edit a small table, run a simple `SELECT` query, and compare the cells read in row-oriented and column-oriented storage. Explore how selecting a few columns or filtering rows changes the amount of data each layout needs to access.

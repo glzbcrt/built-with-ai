@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Edit a small table, run a simple SELECT query, and compare the data read by row-oriented and column-oriented storage.">
+<title>Row vs. Column Storage Lab</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f6fa;--surface:#fff;--text:#202433;--muted:#687084;--border:#d9dce5;--accent:#5546d7;--accent-soft:#efedff;--read:#ffe3a3;--read-border:#bd7910;--good:#d6f3e4;--good-border:#23834f;--bad:#ffeded;--bad-border:#bf4242;--shadow:0 8px 24px #27304b0d}
+@media(prefers-color-scheme:dark){:root{--bg:#151821;--surface:#202430;--text:#edf0f7;--muted:#a3abc0;--border:#393f50;--accent:#a69bff;--accent-soft:#302b50;--read:#624914;--read-border:#e1ad48;--good:#183c2a;--good-border:#54c282;--bad:#482323;--bad-border:#e77b7b;--shadow:0 8px 24px #0002}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{width:min(1120px,100% - 32px);margin:0 auto;padding:32px 0 56px}
+h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.15;margin:0 0 8px}
+h2{font-size:1.1rem;margin:0 0 12px}
+p{margin:8px 0}
+.intro,.muted,.hint{color:var(--muted)}
+.intro{font-size:1.08rem;max-width:780px;margin-bottom:22px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin:16px 0;box-shadow:var(--shadow)}
+.toolbar,.query-row,.row-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.toolbar{justify-content:space-between;margin-bottom:10px}
+button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:650}
+button.remove{padding:5px 9px;color:var(--bad-border)}
+input,textarea{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:540px}
+th,td{border:1px solid var(--border);padding:7px;text-align:left;vertical-align:middle}
+th{background:var(--bg);font-size:.88rem}
+.editor input{width:100%;min-width:90px}
+.row-num{color:var(--muted);font: .85rem ui-monospace,monospace}
+.query-row{align-items:flex-start}
+.query-row textarea{flex:1 1 500px;min-height:48px;resize:vertical;font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+.hint{font-size:.9rem;margin-top:9px}
+.error{color:var(--bad-border);font-weight:600;min-height:1.5em;margin-top:8px}
+.summary{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:18px 0 10px}
+.summary strong{font-size:1.35rem}
+.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.format{min-width:0;border:1px solid var(--border);border-radius:12px;padding:14px}
+.format h3{font-size:1rem;margin:0 0 4px}
+.read-count{font-size:1.6rem;font-weight:750}
+.read-count small{font-size:.88rem;font-weight:450;color:var(--muted)}
+.diagram{overflow-x:auto;margin-top:10px}
+.diagram table{min-width:max-content;width:100%;font-size:.85rem}
+.diagram th,.diagram td{padding:6px 8px}
+.cell-read{background:var(--read);box-shadow:inset 0 0 0 1px var(--read-border)}
+.cell-match{background:var(--good);box-shadow:inset 0 0 0 1px var(--good-border)}
+.legend{font-size:.83rem;color:var(--muted);margin:10px 0 0}
+.swatch{display:inline-block;width:12px;height:12px;background:var(--read);border:1px solid var(--read-border);border-radius:3px;vertical-align:-2px;margin:0 4px 0 10px}
+.swatch:first-child{margin-left:0}
+.results{margin-top:16px}
+.empty{color:var(--muted);font-style:italic;padding:8px}
+details{margin-top:16px;color:var(--muted)}
+summary{cursor:pointer;color:var(--text);font-weight:650}
+code{font: .9em ui-monospace,SFMono-Regular,Consolas,monospace}
+@media(max-width:720px){main{width:min(100% - 20px,1120px);padding-top:22px}.card{padding:14px}.compare{grid-template-columns:1fr}.toolbar{align-items:flex-start}}
+</style>
+</head>
+<body>
+<main>
+<h1>🗂️ Row vs. Column Storage Lab</h1>
+<p class="intro">The same table can be stored in different ways. Edit a few records, choose which columns to ask for, and see what a simple <code>SELECT</code> query needs to read in row-oriented and column-oriented storage.</p>
+
+<section class="card" aria-labelledby="data-title">
+<div class="toolbar">
+<div><h2 id="data-title">1 · Create your table</h2><p class="muted">Edit the sample records, or add and remove rows. The table is named <code>employees</code>.</p></div>
+<button type="button" id="add-row">＋ Add row</button>
+</div>
+<div class="table-wrap">
+<table class="editor">
+<thead><tr><th scope="col">Row</th><th scope="col">id</th><th scope="col">name</th><th scope="col">department</th><th scope="col">salary</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+<tbody id="editor-body"></tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="query-title">
+<h2 id="query-title">2 · Write a SELECT query</h2>
+<div class="query-row">
+<textarea id="query" aria-label="SQL query" spellcheck="false">SELECT name, salary FROM employees WHERE department = 'Design';</textarea>
+<button type="button" class="primary" id="run-query">Run query</button>
+</div>
+<p class="hint">Supports <code>SELECT *</code> or a comma-separated list of columns from <code>employees</code>, with an optional equality filter such as <code>WHERE department = 'Design'</code> or <code>WHERE salary = 90000</code>. Column names are <code>id</code>, <code>name</code>, <code>department</code>, and <code>salary</code>.</p>
+<p class="error" id="error" role="alert" aria-live="polite"></p>
+</section>
+
+<section class="card" aria-labelledby="comparison-title">
+<h2 id="comparison-title">3 · Compare the reads</h2>
+<p class="muted" id="query-caption"></p>
+<div class="summary"><span>Cells read to answer this query</span><strong id="read-summary">—</strong></div>
+<div class="compare">
+<article class="format" aria-labelledby="row-title">
+<h3 id="row-title">📄 Row-oriented</h3>
+<p class="muted">Each record is stored together, side by side.</p>
+<div class="read-count" id="row-count">— <small>cell reads</small></div>
+<div class="diagram" id="row-diagram"></div>
+<p class="legend"><span class="swatch"></span>Data read from storage</p>
+</article>
+<article class="format" aria-labelledby="column-title">
+<h3 id="column-title">📚 Column-oriented</h3>
+<p class="muted">Values from the same column are stored together.</p>
+<div class="read-count" id="column-count">— <small>cell reads</small></div>
+<div class="diagram" id="column-diagram"></div>
+<p class="legend"><span class="swatch"></span>Data read from storage</p>
+</article>
+</div>
+<div class="results">
+<h3>Query result</h3>
+<div class="table-wrap" id="result"></div>
+</div>
+<details>
+<summary>What counts as a read?</summary>
+<p>This lab counts individual table cells accessed, not disk pages or bytes. For the row-oriented model, all columns in every row are read to find matching records and return the requested values. For the column-oriented model, an optional filter reads that column for every row, then reads requested columns only for matching rows. A filter column already read is not counted twice. Real database engines use indexes, compression, caching, and storage pages, so their physical I/O can differ.</p>
+</details>
+</section>
+</main>
+<script>
+(() => {
+  const columns = ["id", "name", "department", "salary"];
+  let rows = [
+    { id: "101", name: "Maya Chen", department: "Design", salary: "90000" },
+    { id: "102", name: "Leo Park", department: "Engineering", salary: "112000" },
+    { id: "103", name: "Amira Hassan", department: "Design", salary: "96000" },
+    { id: "104", name: "Noah Silva", department: "Sales", salary: "84000" }
+  ];
+  const editorBody = document.getElementById("editor-body");
+  const queryInput = document.getElementById("query");
+  const error = document.getElementById("error");
+
+  function element(tag, text, className) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  }
+
+  function renderEditor() {
+    editorBody.replaceChildren();
+    rows.forEach((row, index) => {
+      const tr = document.createElement("tr");
+      tr.append(element("td", String(index + 1), "row-num"));
+      columns.forEach(column => {
+        const td = document.createElement("td");
+        const input = document.createElement("input");
+        input.value = row[column];
+        input.setAttribute("aria-label", `Row ${index + 1}, ${column}`);
+        input.addEventListener("input", () => {
+          rows[index][column] = input.value;
+          runQuery();
+        });
+        td.append(input);
+        tr.append(td);
+      });
+      const action = document.createElement("td");
+      const remove = element("button", "Remove", "remove");
+      remove.type = "button";
+      remove.setAttribute("aria-label", `Remove row ${index + 1}`);
+      remove.addEventListener("click", () => {
+        rows.splice(index, 1);
+        renderEditor();
+        runQuery();
+      });
+      action.append(remove);
+      tr.append(action);
+      editorBody.append(tr);
+    });
+  }
+
+  function parseQuery(sql) {
+    const match = sql.match(/^\s*SELECT\s+(\*|[a-z_][\w]*(?:\s*,\s*[a-z_][\w]*)*)\s+FROM\s+([a-z_][\w]*)(?:\s+WHERE\s+([a-z_][\w]*)\s*=\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?)))?\s*;?\s*$/i);
+    if (!match) throw new Error("Use SELECT columns FROM employees, optionally followed by WHERE column = value.");
+    if (match[2].toLowerCase() !== "employees") throw new Error("This table is named employees.");
+    const selected = match[1] === "*" ? [...columns] : match[1].split(",").map(name => name.trim().toLowerCase());
+    if (selected.some(name => !columns.includes(name))) throw new Error(`Choose from these columns: ${columns.join(", ")}.`);
+    const uniqueSelected = [...new Set(selected)];
+    const whereColumn = match[3]?.toLowerCase();
+    if (whereColumn && !columns.includes(whereColumn)) throw new Error(`Unknown filter column. Choose from: ${columns.join(", ")}.`);
+    const whereValue = match[4] ?? match[5] ?? match[6];
+    const numeric = match[6] !== undefined;
+    return {
+      selected: uniqueSelected,
+      whereColumn,
+      whereValue,
+      matches: row => {
+        if (!whereColumn) return true;
+        if (numeric) return row[whereColumn] !== "" && Number.isFinite(Number(row[whereColumn])) && Number(row[whereColumn]) === Number(whereValue);
+        return row[whereColumn] === whereValue;
+      }
+    };
+  }
+
+  function renderStorage(targetId, format, query, matchedIndexes, readCount) {
+    const target = document.getElementById(targetId);
+    target.replaceChildren();
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    headerRow.append(element("th", "Row"));
+    columns.forEach(column => headerRow.append(element("th", column)));
+    head.append(headerRow);
+    const body = document.createElement("tbody");
+    rows.forEach((row, index) => {
+      const tr = document.createElement("tr");
+      tr.append(element("th", String(index + 1)));
+      columns.forEach(column => {
+        const cell = element("td", row[column] || "∅");
+        const isRead = format === "row"
+          ? readCount > 0
+          : query.whereColumn
+            ? column === query.whereColumn || (matchedIndexes.includes(index) && query.selected.includes(column))
+            : query.selected.includes(column);
+        if (isRead) cell.className = "cell-read";
+        tr.append(cell);
+      });
+      body.append(tr);
+    });
+    table.append(head, body);
+    target.append(table);
+    if (rows.length === 0) target.append(element("p", "No rows to read.", "empty"));
+  }
+
+  function renderResult(query, matchedIndexes) {
+    const target = document.getElementById("result");
+    target.replaceChildren();
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    query.selected.forEach(column => headerRow.append(element("th", column)));
+    head.append(headerRow);
+    const body = document.createElement("tbody");
+    matchedIndexes.forEach(index => {
+      const tr = document.createElement("tr");
+      query.selected.forEach(column => tr.append(element("td", rows[index][column] || "∅")));
+      body.append(tr);
+    });
+    if (matchedIndexes.length === 0) {
+      const tr = document.createElement("tr");
+      const td = element("td", "No matching rows.");
+      td.colSpan = query.selected.length;
+      tr.append(td);
+      body.append(tr);
+    }
+    table.append(head, body);
+    target.append(table);
+  }
+
+  function runQuery() {
+    try {
+      const query = parseQuery(queryInput.value);
+      const matchedIndexes = rows.reduce((matches, row, index) => {
+        if (query.matches(row)) matches.push(index);
+        return matches;
+      }, []);
+      const rowReads = rows.length * columns.length;
+      const columnReads = query.whereColumn
+        ? rows.length + matchedIndexes.length * query.selected.filter(column => column !== query.whereColumn).length
+        : rows.length * query.selected.length;
+      document.getElementById("query-caption").textContent = queryInput.value.trim();
+      document.getElementById("row-count").firstChild.textContent = rowReads;
+      document.getElementById("column-count").firstChild.textContent = columnReads;
+      document.getElementById("read-summary").textContent = `${rowReads} vs. ${columnReads}`;
+      renderStorage("row-diagram", "row", query, matchedIndexes, rowReads);
+      renderStorage("column-diagram", "column", query, matchedIndexes, columnReads);
+      renderResult(query, matchedIndexes);
+      error.textContent = "";
+    } catch (cause) {
+      error.textContent = cause instanceof Error ? cause.message : "Could not parse the query.";
+    }
+  }
+
+  document.getElementById("add-row").addEventListener("click", () => {
+    rows.push(Object.fromEntries(columns.map(column => [column, ""])));
+    renderEditor();
+    runQuery();
+    editorBody.lastElementChild?.querySelector("input")?.focus();
+  });
+  document.getElementById("run-query").addEventListener("click", runQuery);
+  queryInput.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") runQuery();
+  });
+
+  renderEditor();
+  runQuery();
+})();
+</script>
+</body>
+</html>
