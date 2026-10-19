@@ -65,3 +65,7 @@ Get hands-on with the ways data is organized and accessed, and see how a storage
 ### [📚 Row vs. Column Storage Lab](./database/row-vs-column.html)
 
 Create and edit a small table, run a simple `SELECT` query, and compare the cells read in row-oriented and column-oriented storage. Explore how selecting a few columns or filtering rows changes the amount of data each layout needs to access.
+
+### [🪵 Parquet Explorer](./database/parquet-explorer.html)
+
+Explore Parquet's columnar file structure with interactive queries. See how row groups, column chunks, pages, and min/max statistics affect which data is examined, and compare value encodings—plain, dictionary, run-length, and delta—on sample columns or your own values.

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Explore Parquet's columnar file structure, row groups, column chunks, pages, encodings, compression, and statistics with interactive queries.">
+<title>Parquet Explorer</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f6fa;--surface:#fff;--text:#202433;--muted:#687084;--border:#d9dce5;--accent:#5546d7;--accent-soft:#efedff;--read:#ffe3a3;--read-border:#bd7910;--skip:#e4e8f1;--skip-text:#777f91;--good:#d6f3e4;--good-border:#23834f;--bad:#ffeded;--bad-border:#bf4242;--shadow:0 8px 24px #27304b0d}
+@media(prefers-color-scheme:dark){:root{--bg:#151821;--surface:#202430;--text:#edf0f7;--muted:#a3abc0;--border:#393f50;--accent:#a69bff;--accent-soft:#302b50;--read:#624914;--read-border:#e1ad48;--skip:#303542;--skip-text:#a3abc0;--good:#183c2a;--good-border:#54c282;--bad:#482323;--bad-border:#e77b7b;--shadow:0 8px 24px #0002}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{width:min(1120px,100% - 32px);margin:0 auto;padding:32px 0 56px}
+h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.15;margin:0 0 8px}
+h2{font-size:1.1rem;margin:0 0 12px}
+h3{font-size:1rem;margin:0 0 6px}
+p{margin:8px 0}
+.intro,.muted,.hint{color:var(--muted)}
+.intro{font-size:1.08rem;max-width:820px;margin-bottom:22px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin:16px 0;box-shadow:var(--shadow)}
+.toolbar,.controls,.query-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.toolbar{justify-content:space-between;margin-bottom:12px}
+label{display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:.9rem}
+select,input,textarea,button{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px}
+select,button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:650}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.query-row{align-items:flex-start}
+.query-row textarea{flex:1 1 480px;min-height:50px;resize:vertical;font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+.hint{font-size:.9rem}
+.error{color:var(--bad-border);font-weight:600;min-height:1.5em}
+.callout{border-left:4px solid var(--accent);padding:9px 12px;background:var(--accent-soft);border-radius:0 8px 8px 0;margin-top:12px}
+.file-map{display:grid;gap:12px}
+.file-root{border:2px solid var(--accent);border-radius:12px;padding:12px}
+.file-title{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-weight:700;margin-bottom:10px}
+.rowgroups{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.rg{border:1px solid var(--border);border-radius:10px;padding:10px;min-width:0}
+.rg.skipped{border-style:dashed;opacity:.68}
+.rg-title{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:.88rem;font-weight:700;margin-bottom:8px}
+.badge{border-radius:999px;padding:2px 8px;background:var(--good);color:var(--good-border);font-size:.74rem;white-space:nowrap}
+.badge.skip{background:var(--skip);color:var(--skip-text)}
+.stats{font-size:.76rem;color:var(--muted);margin:0 0 8px}
+.chunk{border-top:1px solid var(--border);padding:6px 0}
+.chunk-name{font-size:.78rem;font-weight:700;display:flex;justify-content:space-between;gap:5px;margin-bottom:5px}
+.pages{display:flex;flex-wrap:wrap;gap:4px}
+.page{font-size:.7rem;border:1px solid var(--border);border-radius:5px;padding:2px 5px;color:var(--muted)}
+.page.read{background:var(--read);border-color:var(--read-border);color:var(--text)}
+.page.skip{background:var(--skip);color:var(--skip-text)}
+.meta{font-size:.78rem;color:var(--muted);margin-top:10px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;color:var(--muted);font-size:.84rem}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.swatch.read{background:var(--read);border:1px solid var(--read-border)}
+.swatch.skip{background:var(--skip);border:1px solid var(--border)}
+.swatch.page{background:var(--surface);border:1px solid var(--border)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;margin:14px 0}
+.metric{border:1px solid var(--border);border-radius:9px;padding:10px}
+.metric b{display:block;font-size:1.4rem}
+.metric span{font-size:.81rem;color:var(--muted)}
+.result{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:420px;font-size:.88rem}
+th,td{border:1px solid var(--border);padding:7px 9px;text-align:left}
+th{background:var(--bg)}
+.diagram{overflow-x:auto}
+.diagram table{min-width:max-content}
+.diagram th,.diagram td{padding:6px 8px}
+.cell-read{background:var(--read)}
+.empty{color:var(--muted);font-style:italic;padding:8px}
+.enc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+.enc{border:1px solid var(--border);border-radius:10px;padding:12px;min-width:0}
+.enc.best{border-color:var(--good-border);box-shadow:inset 0 0 0 1px var(--good-border)}
+.enc.na{opacity:.6}
+.enc-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.enc-bytes{font-size:1.3rem;font-weight:750}
+.enc-bytes small{font-size:.78rem;font-weight:450;color:var(--muted)}
+.enc-bar{height:8px;border-radius:4px;background:var(--skip);margin:8px 0;overflow:hidden}
+.enc-bar i{display:block;height:100%;background:var(--accent)}
+.enc p{font-size:.84rem;color:var(--muted);margin:6px 0}
+.enc-stream{font:12px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.enc-stream span{background:var(--accent-soft);border-radius:4px;padding:0 5px}
+.enc-stream .dict{background:var(--read)}
+.concepts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.concept{border:1px solid var(--border);border-radius:10px;padding:13px}
+.concept p{font-size:.9rem;color:var(--muted);margin-bottom:0}
+code{font:.9em ui-monospace,SFMono-Regular,Consolas,monospace}
+details{margin-top:16px;color:var(--muted)}
+summary{cursor:pointer;color:var(--text);font-weight:650}
+@media(max-width:700px){main{width:min(100% - 20px,1120px);padding-top:22px}.card{padding:14px}.controls{align-items:flex-start}}
+</style>
+</head>
+<body>
+<main>
+<h1>🪵 Parquet Explorer</h1>
+<p class="intro">Apache Parquet is a columnar file format built for efficient analytics. Explore how a query travels through its file structure: row groups contain column chunks, chunks contain pages, and metadata can help skip data that cannot match your filter.</p>
+
+<section class="card" aria-labelledby="query-title">
+<h2 id="query-title">1 · Try a query</h2>
+<div class="query-row">
+<textarea id="query" aria-label="SQL query" spellcheck="false">SELECT product, amount FROM sales WHERE region = 'West';</textarea>
+<button type="button" class="primary" id="run-query">Run query</button>
+</div>
+<p class="hint">Try <code>SELECT *</code>, or select columns such as <code>SELECT product, amount FROM sales</code>. Filters support a single equality, for example <code>WHERE region = 'West'</code> or <code>WHERE amount = 42</code>. Dataset columns: <code>id</code>, <code>region</code>, <code>product</code>, <code>amount</code>.</p>
+<p class="error" id="error" role="alert" aria-live="polite"></p>
+<div class="controls">
+<label for="group-size">Rows per row group
+<select id="group-size"><option value="3">3 rows</option><option value="4" selected>4 rows</option><option value="6">6 rows</option></select>
+</label>
+<label for="page-size">Rows per illustrative page
+<select id="page-size"><option value="2" selected>2 rows</option><option value="4">4 rows</option></select>
+</label>
+</div>
+<p class="hint">Changing row-group or page size rebuilds the illustration. Actual Parquet files store pages in column chunks; page size here is a teaching simplification.</p>
+</section>
+
+<section class="card" aria-labelledby="structure-title">
+<div class="toolbar">
+<div><h2 id="structure-title">2 · Inspect the Parquet file</h2><p class="muted">Follow the hierarchy from the file down to individual column pages. Highlighted chunks are accessed; dimmed groups are skipped using statistics.</p></div>
+</div>
+<div id="file-map" class="file-map" aria-live="polite"></div>
+<div class="legend"><span><i class="swatch read"></i>Column data needed by this query</span><span><i class="swatch skip"></i>Row group excluded by statistics</span><span><i class="swatch page"></i>Illustrative page boundary</span></div>
+<div class="metrics">
+<div class="metric"><b id="groups-read">—</b><span>row groups inspected</span></div>
+<div class="metric"><b id="groups-skipped">—</b><span>row groups skipped</span></div>
+<div class="metric"><b id="chunks-read">—</b><span>column chunks read</span></div>
+<div class="metric"><b id="cells-read">—</b><span>cell values examined¹</span></div>
+</div>
+<div class="callout" id="explanation" aria-live="polite"></div>
+<p class="hint">¹ Illustrative count of values in the selected chunks, not physical disk reads or bytes. Real readers may skip pages too, use indexes, and read compressed pages in batches.</p>
+</section>
+
+<section class="card" aria-labelledby="result-title">
+<h2 id="result-title">3 · Query result</h2>
+<div class="result" id="result"></div>
+</section>
+
+<section class="card" aria-labelledby="encoding-title">
+<h2 id="encoding-title">4 · Explore value encodings</h2>
+<p class="muted">Before compression, Parquet encodes each column's values. Choose a column or type your own values, and compare how different encodings represent them and how many bytes they might need.</p>
+<div class="controls">
+<label for="enc-source">Values from
+<select id="enc-source"><option value="region">sales.region</option><option value="product">sales.product</option><option value="amount">sales.amount</option><option value="id">sales.id</option><option value="custom">My own values</option></select>
+</label>
+<label for="enc-sort"><input type="checkbox" id="enc-sort"> Sort values first</label>
+</div>
+<div id="enc-custom-wrap" hidden>
+<label for="enc-custom" class="hint">Separate values with commas or new lines. Numbers use an integer encoding; any text uses a string encoding.</label>
+<textarea id="enc-custom" rows="3" spellcheck="false" style="width:100%;margin-top:6px;font:14px ui-monospace,SFMono-Regular,Consolas,monospace">red, red, red, blue, blue, green, green, green, green</textarea>
+</div>
+<p class="error" id="enc-error" role="alert" aria-live="polite"></p>
+<div class="callout" id="enc-summary" aria-live="polite"></div>
+<div class="enc-grid" id="enc-grid"></div>
+<p class="hint">Sizes are simplified, uncompressed estimates (4-byte integers, one-byte run and length headers, bit-packed indexes) to show relative trends. Real writers add headers and choose encodings per page, and compression is applied afterward.</p>
+</section>
+
+<section class="card" aria-labelledby="concept-title">
+<h2 id="concept-title">5 · What makes Parquet efficient?</h2>
+<div class="concepts">
+<article class="concept"><h3>🧱 Columnar layout</h3><p>Each row group stores a separate chunk for every column. Queries that need only a few columns can avoid reading the rest.</p></article>
+<article class="concept"><h3>📦 Pages</h3><p>Column chunks are divided into pages, the encoding and compression units inside the file. This model shows page boundaries, but does not simulate byte-level reads.</p></article>
+<article class="concept"><h3>🔎 Statistics</h3><p>Row-group metadata can include values such as each column’s minimum and maximum. Here, an equality filter skips a group when its range cannot contain the searched value.</p></article>
+<article class="concept"><h3>🧩 Encodings</h3><p>Encodings represent values compactly before compression. Dictionary encoding can replace repeated values with small IDs; run-length encoding can represent repeated runs.</p></article>
+<article class="concept"><h3>🗜️ Compression</h3><p>Parquet supports codecs applied to data pages. The best choice depends on the workload: faster codecs may favor speed, while others may favor smaller files.</p></article>
+<article class="concept"><h3>🧬 Nested schemas</h3><p>Parquet schemas can describe typed, nested records such as lists and maps, not just flat tables.</p></article>
+</div>
+<details>
+<summary>What this explorer simplifies</summary>
+<p>Parquet is a file format, not a database or query engine. The dataset and file layout here are simulated in the browser; no Parquet file is generated. Row-group statistics only rule out groups whose minimum/maximum range cannot contain an equality value. A real engine may additionally use page indexes, dictionaries, Bloom filters, indexes, and other metadata. The example page boundaries group whole rows for clarity; actual pages belong to individual column chunks. Encoding and compression reduce bytes, but are not represented in the cell-value count.</p>
+</details>
+</section>
+</main>
+<script>
+(() => {
+  const columns = ["id", "region", "product", "amount"];
+  const numericColumns = new Set(["id", "amount"]);
+  const rows = [
+    { id: "1001", region: "North", product: "Coffee", amount: "12" },
+    { id: "1002", region: "North", product: "Tea", amount: "8" },
+    { id: "1003", region: "North", product: "Coffee", amount: "12" },
+    { id: "1004", region: "North", product: "Bread", amount: "6" },
+    { id: "1005", region: "South", product: "Tea", amount: "8" },
+    { id: "1006", region: "South", product: "Juice", amount: "15" },
+    { id: "1007", region: "South", product: "Tea", amount: "8" },
+    { id: "1008", region: "South", product: "Bread", amount: "6" },
+    { id: "1009", region: "West", product: "Coffee", amount: "12" },
+    { id: "1010", region: "West", product: "Juice", amount: "15" },
+    { id: "1011", region: "West", product: "Coffee", amount: "12" },
+    { id: "1012", region: "West", product: "Tea", amount: "8" }
+  ];
+  const fileMap = document.getElementById("file-map");
+  const queryInput = document.getElementById("query");
+  const error = document.getElementById("error");
+  const groupSizeInput = document.getElementById("group-size");
+  const pageSizeInput = document.getElementById("page-size");
+
+  function el(tag, text, className) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  }
+
+  function parseQuery(sql) {
+    const match = sql.match(/^\s*SELECT\s+(\*|[a-z_][\w]*(?:\s*,\s*[a-z_][\w]*)*)\s+FROM\s+([a-z_][\w]*)(?:\s+WHERE\s+([a-z_][\w]*)\s*=\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?)))?\s*;?\s*$/i);
+    if (!match) throw new Error("Use SELECT columns FROM sales, optionally followed by WHERE column = value.");
+    if (match[2].toLowerCase() !== "sales") throw new Error("This sample table is named sales.");
+    const selected = match[1] === "*" ? [...columns] : match[1].split(",").map(column => column.trim().toLowerCase());
+    if (selected.some(column => !columns.includes(column))) throw new Error(`Choose from these columns: ${columns.join(", ")}.`);
+    const whereColumn = match[3]?.toLowerCase();
+    if (whereColumn && !columns.includes(whereColumn)) throw new Error(`Unknown filter column. Choose from: ${columns.join(", ")}.`);
+    if (new Set(selected).size !== selected.length) throw new Error("List each selected column only once.");
+    const numeric = match[6] !== undefined;
+    if (whereColumn && numericColumns.has(whereColumn) !== numeric) {
+      throw new Error(numericColumns.has(whereColumn) ? "Use an unquoted number when filtering a numeric column." : "Use quotes around a text value.");
+    }
+    return { selected, whereColumn, whereValue: match[4] ?? match[5] ?? match[6], numeric };
+  }
+
+  function makeGroups(size) {
+    const groups = [];
+    for (let start = 0; start < rows.length; start += size) {
+      const indexes = Array.from({ length: Math.min(size, rows.length - start) }, (_, offset) => start + offset);
+      const stats = Object.fromEntries(columns.map(column => {
+        const values = indexes.map(index => rows[index][column]);
+        if (numericColumns.has(column)) {
+          const nums = values.map(Number);
+          return [column, { min: Math.min(...nums), max: Math.max(...nums) }];
+        }
+        const sorted = [...values].sort((a, b) => a.localeCompare(b));
+        return [column, { min: sorted[0], max: sorted[sorted.length - 1] }];
+      }));
+      groups.push({ indexes, stats });
+    }
+    return groups;
+  }
+
+  function isGroupCandidate(group, query) {
+    if (!query.whereColumn) return true;
+    const stats = group.stats[query.whereColumn];
+    if (numericColumns.has(query.whereColumn)) {
+      const value = Number(query.whereValue);
+      return Number.isFinite(value) && value >= stats.min && value <= stats.max;
+    }
+    return query.whereValue.localeCompare(stats.min) >= 0 && query.whereValue.localeCompare(stats.max) <= 0;
+  }
+
+  function rowMatches(row, query) {
+    if (!query.whereColumn) return true;
+    if (query.numeric) return numericColumns.has(query.whereColumn) && Number(row[query.whereColumn]) === Number(query.whereValue);
+    return row[query.whereColumn] === query.whereValue;
+  }
+
+  function appendChunk(groupNode, group, column, groupIndex, query, candidate, matches, pageSize) {
+    const chunk = el("div", undefined, "chunk");
+    const read = candidate && (
+      query.whereColumn
+        ? column === query.whereColumn || (query.selected.includes(column) && group.indexes.some(index => matches.has(index)))
+        : query.selected.includes(column)
+    );
+    const title = el("div", undefined, "chunk-name");
+    title.append(el("span", column), el("span", read ? "read" : candidate ? "not needed" : "skipped"));
+    chunk.append(title);
+    const pages = el("div", undefined, "pages");
+    for (let offset = 0; offset < group.indexes.length; offset += pageSize) {
+      const pageRows = group.indexes.slice(offset, offset + pageSize);
+      const pageRead = read && (!query.whereColumn || column === query.whereColumn || pageRows.some(index => matches.has(index)));
+      pages.append(el("span", `rows ${pageRows[0] + 1}–${pageRows[pageRows.length - 1] + 1}`, `page ${pageRead ? "read" : "skip"}`));
+    }
+    chunk.append(pages);
+    groupNode.append(chunk);
+  }
+
+  function renderFile(groups, query, candidates, matches, pageSize, chunksRead, cellsRead) {
+    fileMap.replaceChildren();
+    const root = el("div", undefined, "file-root");
+    const title = el("div", undefined, "file-title");
+    title.append(el("span", "📄 sales.parquet"), el("span", "PAR1 · file metadata/footer"));
+    root.append(title);
+    const list = el("div", undefined, "rowgroups");
+    groups.forEach((group, index) => {
+      const candidate = candidates.has(index);
+      const rg = el("article", undefined, `rg ${candidate ? "" : "skipped"}`);
+      const rgTitle = el("div", undefined, "rg-title");
+      rgTitle.append(el("span", `Row group ${index + 1} · rows ${group.indexes[0] + 1}–${group.indexes[group.indexes.length - 1] + 1}`));
+      rgTitle.append(el("span", candidate ? "inspect" : "stats skip", `badge ${candidate ? "" : "skip"}`));
+      rg.append(rgTitle);
+      if (query.whereColumn) {
+        const stats = group.stats[query.whereColumn];
+        rg.append(el("p", `Stats: ${query.whereColumn} min ${stats.min}, max ${stats.max}`, "stats"));
+      } else {
+        rg.append(el("p", "No filter: statistics cannot exclude this group.", "stats"));
+      }
+      columns.forEach(column => appendChunk(rg, group, column, index, query, candidate, matches, pageSize));
+      list.append(rg);
+    });
+    root.append(list);
+    root.append(el("p", `${groups.length} row groups · ${chunksRead} column chunks read · ${cellsRead} cell values examined in this simplified model`, "meta"));
+    fileMap.append(root);
+  }
+
+  function renderResult(query, matchIndexes) {
+    const target = document.getElementById("result");
+    target.replaceChildren();
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const header = document.createElement("tr");
+    query.selected.forEach(column => header.append(el("th", column)));
+    head.append(header);
+    const body = document.createElement("tbody");
+    matchIndexes.forEach(index => {
+      const tr = document.createElement("tr");
+      query.selected.forEach(column => tr.append(el("td", rows[index][column])));
+      body.append(tr);
+    });
+    if (matchIndexes.length === 0) {
+      const tr = document.createElement("tr");
+      const td = el("td", "No matching rows.");
+      td.colSpan = query.selected.length;
+      tr.append(td);
+      body.append(tr);
+    }
+    table.append(head, body);
+    target.append(table);
+  }
+
+  function runQuery() {
+    try {
+      const query = parseQuery(queryInput.value);
+      const groupSize = Number(groupSizeInput.value);
+      const pageSize = Number(pageSizeInput.value);
+      const groups = makeGroups(groupSize);
+      const candidates = new Set(groups.flatMap((group, index) => isGroupCandidate(group, query) ? [index] : []));
+      const matchIndexes = rows.reduce((result, row, index) => {
+        if (groups.some((group, groupIndex) => candidates.has(groupIndex) && group.indexes.includes(index)) && rowMatches(row, query)) result.push(index);
+        return result;
+      }, []);
+      const matches = new Set(matchIndexes);
+      const chunksRead = groups.reduce((total, group, index) => {
+        if (!candidates.has(index)) return total;
+        if (!query.whereColumn) return total + query.selected.length;
+        const hasMatches = group.indexes.some(rowIndex => matches.has(rowIndex));
+        return total + 1 + query.selected.filter(column => column !== query.whereColumn && hasMatches).length;
+      }, 0);
+      const cellsRead = groups.reduce((total, group, index) => {
+        if (!candidates.has(index)) return total;
+        if (!query.whereColumn) return total + group.indexes.length * query.selected.length;
+        const matchedRows = group.indexes.filter(rowIndex => matches.has(rowIndex)).length;
+        return total + group.indexes.length + matchedRows * query.selected.filter(column => column !== query.whereColumn).length;
+      }, 0);
+      renderFile(groups, query, candidates, matches, pageSize, chunksRead, cellsRead);
+      document.getElementById("groups-read").textContent = candidates.size;
+      document.getElementById("groups-skipped").textContent = groups.length - candidates.size;
+      document.getElementById("chunks-read").textContent = chunksRead;
+      document.getElementById("cells-read").textContent = cellsRead;
+      const all = !query.whereColumn;
+      document.getElementById("explanation").textContent = all
+        ? `No filter is present, so row-group statistics cannot rule anything out. The projected ${query.selected.length === 1 ? "column is" : "columns are"} read across all ${groups.length} row groups.`
+        : `${candidates.size} of ${groups.length} row groups have ${query.whereColumn} statistics whose min–max range could contain ${query.whereValue}. Read the filter column in those groups, then the selected columns for ${matchIndexes.length} matching ${matchIndexes.length === 1 ? "row" : "rows"}.`;
+      renderResult(query, matchIndexes);
+      error.textContent = "";
+    } catch (cause) {
+      error.textContent = cause instanceof Error ? cause.message : "Could not parse the query.";
+    }
+  }
+
+  document.getElementById("run-query").addEventListener("click", runQuery);
+  queryInput.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") runQuery();
+  });
+  groupSizeInput.addEventListener("change", runQuery);
+  pageSizeInput.addEventListener("change", runQuery);
+  runQuery();
+
+  const encSource = document.getElementById("enc-source");
+  const encSort = document.getElementById("enc-sort");
+  const encCustom = document.getElementById("enc-custom");
+  const encError = document.getElementById("enc-error");
+  const encGrid = document.getElementById("enc-grid");
+  const maxShown = 24;
+  const bitsFor = max => max <= 0 ? 1 : Math.floor(Math.log2(max)) + 1;
+  const packed = (count, bits) => Math.ceil(count * bits / 8);
+  const byteLength = text => new TextEncoder().encode(text).length;
+
+  function encodingValues() {
+    if (encSource.value === "custom") {
+      return encCustom.value.split(/[,\n]/).map(value => value.trim()).filter(value => value !== "");
+    }
+    return rows.map(row => row[encSource.value]);
+  }
+
+  function chips(items, className) {
+    const stream = el("div", undefined, "enc-stream");
+    items.slice(0, maxShown).forEach(item => stream.append(el("span", item, className)));
+    if (items.length > maxShown) stream.append(el("span", `… +${items.length - maxShown} more`));
+    return stream;
+  }
+
+  function buildEncodings(values) {
+    const isInt = values.every(value => /^-?\d+$/.test(value) && Math.abs(Number(value)) < 2 ** 31);
+    const plainSize = value => isInt ? 4 : 4 + byteLength(value);
+    const plainBytes = values.reduce((total, value) => total + plainSize(value), 0);
+    const dictionary = [...new Set(values)];
+    const ids = values.map(value => dictionary.indexOf(value));
+    const dictBytes = dictionary.reduce((total, value) => total + plainSize(value), 0);
+    const width = bitsFor(dictionary.length - 1);
+    const runs = [];
+    ids.forEach(id => {
+      const last = runs[runs.length - 1];
+      if (last && last.id === id) last.count++;
+      else runs.push({ id, count: 1 });
+    });
+    const list = [
+      {
+        name: "Plain", note: isInt ? "Each integer is stored as 4 bytes." : "Each string is stored as a 4-byte length plus its bytes.",
+        bytes: plainBytes,
+        stream: chips(values.map(value => isInt ? value : `${byteLength(value)}·${value}`))
+      },
+      {
+        name: "Dictionary", note: `Unique values are stored once; each row stores a ${width}-bit index. Dictionary: ${dictBytes} bytes, indexes: ${packed(values.length, width) + 1} bytes.`,
+        bytes: dictBytes + 1 + packed(values.length, width),
+        stream: (() => { const box = el("div"); box.append(chips(dictionary.map((value, id) => `${id}=${value}`), "dict"), chips(ids.map(String))); return box; })()
+      },
+      {
+        name: "Run-length (on dictionary IDs)", note: `Repeated consecutive IDs become count×ID pairs: ${runs.length} ${runs.length === 1 ? "run" : "runs"} for ${values.length} values, each costing 1 header byte plus ${Math.ceil(width / 8)} byte for the ID.`,
+        bytes: dictBytes + runs.length * (1 + Math.ceil(width / 8)),
+        stream: (() => { const box = el("div"); box.append(chips(dictionary.map((value, id) => `${id}=${value}`), "dict"), chips(runs.map(run => `${run.count}×${run.id}`))); return box; })()
+      }
+    ];
+    if (isInt) {
+      const nums = values.map(Number);
+      const deltas = nums.slice(1).map((value, index) => value - nums[index]);
+      const minDelta = deltas.length ? Math.min(...deltas) : 0;
+      const adjusted = deltas.map(delta => delta - minDelta);
+      const deltaWidth = bitsFor(adjusted.length ? Math.max(...adjusted) : 0);
+      list.push({
+        name: "Delta (integers)", note: `Stores the first value, then each change from the previous value, minus the smallest change (${minDelta}), bit-packed at ${deltaWidth} ${deltaWidth === 1 ? "bit" : "bits"} each. Best for sorted or steadily changing numbers.`,
+        bytes: 8 + packed(adjusted.length, deltaWidth),
+        stream: chips([`first=${nums[0]}`, `min Δ=${minDelta}`, ...adjusted.map(value => `+${value}`)])
+      });
+    } else {
+      const items = [];
+      let bytes = 0;
+      values.forEach((value, index) => {
+        let prefix = 0;
+        if (index > 0) {
+          const previous = values[index - 1];
+          while (prefix < value.length && prefix < previous.length && value[prefix] === previous[prefix]) prefix++;
+        }
+        const suffix = value.slice(prefix);
+        bytes += 2 + byteLength(suffix);
+        items.push(`${prefix}+"${suffix}"`);
+      });
+      list.push({
+        name: "Delta byte array (strings)", note: "Each string stores how many leading characters it shares with the previous value, then only the remaining suffix. Best for sorted strings with common prefixes.",
+        bytes, stream: chips(items)
+      });
+    }
+    return { list, plainBytes, isInt };
+  }
+
+  function renderEncodings() {
+    try {
+      let values = encodingValues();
+      if (values.length === 0) throw new Error("Enter at least one value.");
+      if (values.length > 200) throw new Error("Use 200 values or fewer.");
+      if (encSort.checked) {
+        const numeric = values.every(value => /^-?\d+$/.test(value));
+        values = [...values].sort((a, b) => numeric ? Number(a) - Number(b) : a.localeCompare(b));
+      }
+      const { list, plainBytes, isInt } = buildEncodings(values);
+      const best = list.reduce((a, b) => b.bytes < a.bytes ? b : a);
+      encGrid.replaceChildren();
+      list.forEach(item => {
+        const card = el("article", undefined, `enc ${item === best ? "best" : ""}`);
+        const head = el("div", undefined, "enc-head");
+        const bytes = el("span", `${item.bytes} `, "enc-bytes");
+        bytes.append(el("small", "bytes"));
+        head.append(el("h3", item === best ? `${item.name} ✓` : item.name), bytes);
+        const bar = el("div", undefined, "enc-bar");
+        const fill = document.createElement("i");
+        fill.style.width = `${Math.min(100, Math.round(item.bytes / Math.max(plainBytes, item.bytes) * 100))}%`;
+        bar.append(fill);
+        card.append(head, bar, el("p", item.note), item.stream);
+        encGrid.append(card);
+      });
+      const saved = plainBytes - best.bytes;
+      document.getElementById("enc-summary").textContent = best.name === "Plain"
+        ? `For these ${values.length} ${isInt ? "integers" : "strings"}, Plain is smallest. Encodings pay off when values repeat, are sorted, or change by small steps.`
+        : `${best.name} is smallest here: ${best.bytes} bytes versus ${plainBytes} for Plain (${Math.round(saved / plainBytes * 100)}% smaller).`;
+      encError.textContent = "";
+    } catch (cause) {
+      encError.textContent = cause instanceof Error ? cause.message : "Could not encode these values.";
+    }
+  }
+
+  encSource.addEventListener("change", () => {
+    document.getElementById("enc-custom-wrap").hidden = encSource.value !== "custom";
+    renderEncodings();
+  });
+  encSort.addEventListener("change", renderEncodings);
+  encCustom.addEventListener("input", renderEncodings);
+  renderEncodings();
+})();
+</script>
+</body>
+</html>
