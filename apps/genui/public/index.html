@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenUI Lab | Two ways to build an interface</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark">g.</span> GenUI <span class="muted">/ lab</span></a>
+    <span class="top-note">A transparent experiment in generative interfaces</span>
+    <span class="connection" id="connection">Checking connection...</span>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow">ONE PROMPT / TWO ARCHITECTURES</p>
+      <h1>Compose the rules.<br>Or let the model <em>write them.</em></h1>
+      <p class="lede">Compare a constrained component runtime with model-written HTML, CSS, and JavaScript.<br>Inspect the request, response, source, and execution behind each interface.</p>
+    </section>
+    <section class="panel prompt-panel" aria-labelledby="prompt-heading">
+      <div class="section-heading"><span class="step">01</span><h2 id="prompt-heading">Describe the interface you want</h2></div>
+      <form id="prompt-form" class="prompt-grid">
+        <div>
+          <label for="prompt">One shared prompt</label>
+          <textarea id="prompt" rows="4" maxlength="6000" required>Create an interactive project dashboard. Let me add tasks, filter them, mark them complete, delete them, and reset sample data. Show task counts and progress using sample data.</textarea>
+          <div class="examples" aria-label="Example prompts">
+            <button type="button" data-example="project">Project dashboard &#8599;</button>
+            <button type="button" data-example="travel">Travel planner &#8599;</button>
+            <button type="button" data-example="counter">Custom counter &#8599;</button>
+          </div>
+        </div>
+        <div class="generation-settings">
+          <label for="mode">Generation source</label>
+          <select id="mode"><option value="demo">Demo / offline templates, not GPT</option><option value="azure">Azure OpenAI / live model</option></select>
+          <label for="approaches">Approaches to generate</label>
+          <select id="approaches"><option value="both">Both / compare the same prompt</option><option value="structured">A / Defined functions only</option><option value="code">B / Generated JavaScript only</option></select>
+          <p class="helper" id="mode-help">Offline examples vary by keywords only. To build arbitrary prompt-specific interfaces, use Azure. No automatic fallback.</p>
+          <button class="primary" id="generate" type="submit">Generate both interfaces <span>&#8594;</span></button>
+        </div>
+      </form>
+      <p id="comparison-note" class="helper" role="status">Both modes receive your exact prompt, with different instructions and output contracts.</p>
+      <p class="error" id="connection-error" role="alert" hidden></p>
+    </section>
+
+    <section class="comparison" aria-label="Two interface generation approaches">
+      <article class="panel lane" aria-labelledby="structured-heading">
+        <div class="lane-heading"><span class="approach-mark">A</span><div><p class="eyebrow">MODEL COMPOSES / YOUR CODE EXECUTES</p><h2 id="structured-heading">Defined functions</h2></div><span class="badge" id="structured-badge">NOT GENERATED</span></div>
+        <p class="lane-description">The model chooses components, actions, and bindings. A trusted JavaScript runtime renders and runs the interface.</p>
+        <details class="catalog"><summary>Available behavior catalog</summary><dl><dt>appendRow / filterRows</dt><dd>Forms add or filter table rows.</dd><dt>toggleRow / deleteRow</dt><dd>Row controls update completion or delete items.</dd><dt>resetTable</dt><dd>A button restores the initial table state.</dd><dt>rowCount / completedCount / completionSummary</dt><dd>Metric and chart bindings derive values from table state.</dd></dl><p>New behavior requires application code. No model-written JavaScript is executed in this mode.</p></details>
+        <p class="status" id="structured-status" role="status">Waiting for your prompt.</p>
+        <p class="error" id="structured-error" role="alert" hidden></p>
+        <div class="preview-toolbar"><span>TRUSTED COMPONENT PREVIEW</span><button type="button" class="small-button" data-inspect="structured">Inspect A</button></div>
+        <div class="preview-surface"><div id="preview" class="preview"><div class="empty"><span class="empty-icon">{ UI }</span><h3>A model-composed interface</h3><p>Generated JSON becomes trusted components.</p></div></div></div>
+        <p class="preview-note">Select a component to inspect its mapping. State is local to this preview.</p>
+      </article>
+      <article class="panel lane code-lane" aria-labelledby="code-heading">
+        <div class="lane-heading"><span class="approach-mark">B</span><div><p class="eyebrow">MODEL WRITES / THE BROWSER EXECUTES</p><h2 id="code-heading">Generated JavaScript</h2></div><span class="badge" id="code-badge">NOT GENERATED</span></div>
+        <p class="lane-description">The model writes HTML, CSS, and JavaScript. It can invent behavior beyond the catalog, within browser sandbox limits.</p>
+        <details class="sandbox-notice"><summary>Execution boundary and limitations</summary><p>Run is explicit. Code executes in an opaque-origin iframe with scripts and local form events: no host DOM, credentials, storage, Node.js, popups, or privileged bridge. CSP blocks fetches, external resources, workers, frames, and form submissions; eval is disabled.</p><p>This is not full adversarial isolation: infinite loops can freeze the tab, memory is not capped, and self-navigation may issue a network request before the preview is removed. Do not run hostile code or use sensitive input. A public code runner needs separate process/container isolation and network controls.</p></details>
+        <p class="status" id="code-status" role="status">Waiting for your prompt.</p>
+        <p class="error" id="code-error" role="alert" hidden></p>
+        <div class="preview-toolbar"><span>ISOLATED CODE PREVIEW</span><button type="button" class="small-button" data-inspect="code">Inspect B</button></div>
+        <div class="code-controls">
+          <button type="button" class="secondary" id="review-code" disabled>Review JavaScript</button>
+          <button type="button" class="run-button" id="run-code" disabled>Run generated code</button>
+          <button type="button" class="small-button" id="stop-code" disabled>Stop</button>
+        </div>
+        <p id="code-run-status" class="helper" role="status">Generation never automatically executes source. Review it before running.</p>
+        <div class="code-surface" id="code-preview"><div class="empty"><span class="empty-icon">&lt;/&gt;</span><h3>A model-written application</h3><p>Generate, inspect the source, then explicitly run it.</p></div></div>
+        <p class="preview-note">Do not run hostile code or use sensitive input. Infinite loops can freeze the tab. Run rebuilds a fresh iframe; Stop discards it. See execution limitations above.</p>
+      </article>
+    </section>
+
+    <section class="inspector panel" aria-labelledby="inspector-heading">
+      <div class="inspector-heading"><div class="section-heading"><span class="step">03</span><h2 id="inspector-heading">Open the black box</h2></div><div class="approach-switch" aria-label="Approach to inspect"><button type="button" data-inspect="structured" aria-pressed="true">A / Defined functions</button><button type="button" data-inspect="code" aria-pressed="false">B / Generated JavaScript</button></div></div>
+      <div class="tabs" role="tablist" aria-label="Generation artifacts">
+        <button role="tab" id="tab-explain" aria-controls="artifact-panel" aria-selected="true" data-tab="explain">How it works</button>
+        <button role="tab" id="tab-request" aria-controls="artifact-panel" aria-selected="false" data-tab="request" tabindex="-1">API request</button>
+        <button role="tab" id="tab-response" aria-controls="artifact-panel" aria-selected="false" data-tab="response" tabindex="-1">Raw response</button>
+        <button role="tab" id="tab-schema" aria-controls="artifact-panel" aria-selected="false" data-tab="schema" tabindex="-1">Schema</button>
+        <button role="tab" id="tab-spec" aria-controls="artifact-panel" aria-selected="false" data-tab="spec" tabindex="-1">Output editor</button>
+        <button role="tab" id="tab-javascript" aria-controls="artifact-panel" aria-selected="false" data-tab="javascript" tabindex="-1">JavaScript</button>
+        <button role="tab" id="tab-html" aria-controls="artifact-panel" aria-selected="false" data-tab="html" tabindex="-1" hidden>HTML</button>
+        <button role="tab" id="tab-css" aria-controls="artifact-panel" aria-selected="false" data-tab="css" tabindex="-1" hidden>CSS</button>
+        <button role="tab" id="tab-state" aria-controls="artifact-panel" aria-selected="false" data-tab="state" tabindex="-1">State &amp; execution</button>
+      </div>
+      <div id="artifact-panel" role="tabpanel" aria-labelledby="tab-explain">
+        <p class="artifact-caption" id="artifact-caption"></p>
+        <pre id="artifact"></pre>
+        <div id="editor-artifact" hidden>
+          <label for="json-editor">Editable output JSON for the selected approach</label>
+          <textarea id="json-editor" spellcheck="false"></textarea>
+          <button type="button" class="secondary" id="apply-json" disabled>Apply locally</button>
+          <p id="editor-status" role="status"></p>
+        </div>
+      </div>
+    </section>
+    <footer><span>GenUI Lab / Same intent, different trust boundaries.</span><span>Azure OpenAI Responses API / Vanilla JavaScript / No dependencies</span></footer>
+  </main>
+</body>
+</html>

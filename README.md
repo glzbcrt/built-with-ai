@@ -4,7 +4,7 @@
 
 This collection turns abstract ideas into hands-on experiments. Change an input, compare the results, and discover the reasoning behind what you see—from the shape of a dataset to the way AI represents numbers and processes text.
 
-Each page focuses on one topic, pairing interactive examples with short explanations. Pick a subject below and start exploring. ✨
+The single-file pages focus on one topic, pairing interactive examples with short explanations. The Apps category contains multi-file projects with their own setup instructions. Pick a subject below and start exploring. ✨
 
 ## 🧮 Math
 
@@ -69,3 +69,13 @@ Create and edit a small table, run a simple `SELECT` query, and compare the cell
 ### [🪵 Parquet Explorer](./database/parquet-explorer.html)
 
 Explore Parquet's columnar file structure with interactive queries. See how row groups, column chunks, pages, and min/max statistics affect which data is examined, and compare value encodings—plain, dictionary, run-length, and delta—on sample columns or your own values.
+
+## 🛠️ Apps
+
+Explore larger, multi-file applications in the [apps folder](./apps/). Unlike the standalone HTML pages above, these projects have their own source files and runtime requirements. Follow each app's README to run it locally.
+
+### [✨ GenUI Lab](./apps/genui/)
+
+Compare two ways to turn the same prompt into an interactive interface: composing predefined components and actions from structured JSON, or generating HTML, CSS, and JavaScript. Inspect requests, responses, schemas, source, and execution state to understand how each approach works. Try deterministic examples in Demo mode, or connect Azure OpenAI for live generation; generated JavaScript runs only after an explicit Run action in a sandboxed preview.
+
+Requires Node.js 22.9+ with no dependency installation. See the [GenUI setup and walkthrough](./apps/genui/README.md) to get started.
