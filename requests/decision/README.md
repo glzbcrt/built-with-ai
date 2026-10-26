@@ -6,7 +6,7 @@ Two HTTP request collections demonstrate structured decision and classification 
 
 ### 🎞️ Decision models slide deck
 
-Open [Decision Models: From Chat to Judgment](./index.html) for a short Reveal.js
+Open [Decision Models: From Chat to Judgment](./deck.html) for a short Reveal.js
 presentation that introduces decision models: models that evaluate text or JSON
 against bounded questions and return typed answers with probabilities, rather
 than generating free-form text.
