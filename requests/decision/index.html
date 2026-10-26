@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A short introduction to decision models: Jev, System One, typed questions, probabilities, and Microsoft Foundry examples.">
+  <title>Decision Models: From Chat to Judgment</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/theme/simple.css">
+  <style>
+    :root { --ink: #162331; --blue: #125a9c; --muted: #4d5c6b; --line: #cbd5df; }
+    body { background: #fbfdff; }
+    .reveal-viewport {
+      background-color: #fbfdff;
+      background-image:
+        radial-gradient(circle at 8% 12%, rgba(18, 90, 156, .10) 0, transparent 34%),
+        radial-gradient(circle at 92% 18%, rgba(40, 114, 71, .09) 0, transparent 30%),
+        radial-gradient(circle at 80% 95%, rgba(18, 90, 156, .08) 0, transparent 38%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%23125a9c' stroke-opacity='.07' stroke-width='1.5'%3E%3Cpath d='M0 120 Q40 80 80 120 T160 120'/%3E%3Cpath d='M0 40 Q40 0 80 40 T160 40'/%3E%3Ccircle cx='80' cy='80' r='26'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .reveal .slides section .card { background: rgba(246, 249, 252, .88); }
+    .reveal .slides section .green { background: rgba(238, 247, 240, .9); }
+    .reveal { color: var(--ink); font-family: system-ui, sans-serif; font-size: 30px; }
+    .reveal .slides section { text-align: left; padding: 24px 36px; box-sizing: border-box; }
+    .reveal h1, .reveal h2, .reveal h3 { color: var(--ink); font-family: inherit; text-transform: none; font-weight: 750; letter-spacing: -.025em; }
+    .reveal h1 { font-size: 2.5em; line-height: 1.1; }
+    .reveal h2 { font-size: 1.65em; margin-bottom: 28px; }
+    .reveal h3 { font-size: 1.05em; }
+    .reveal p, .reveal li { line-height: 1.45; }
+    .reveal a { color: var(--blue); text-decoration: underline; text-underline-offset: .15em; }
+    .reveal a:hover { color: #083b69; }
+    .reveal a:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+    .reveal .eyebrow { color: var(--blue); font-size: .55em; letter-spacing: .15em; text-transform: uppercase; font-weight: 750; margin-bottom: 20px; }
+    .reveal .subtitle { font-size: 1.05em; color: var(--muted); max-width: 850px; }
+    .reveal .small { font-size: .65em; color: var(--muted); }
+    .reveal .source { font-size: .46em; margin-top: 26px; color: var(--muted); }
+    .reveal .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 22px 0; }
+    .reveal .three { grid-template-columns: repeat(3, 1fr); }
+    .reveal .card { border: 1px solid var(--line); border-top: 5px solid var(--blue); border-radius: 10px; padding: 22px; background: #f6f9fc; }
+    .reveal .card p { font-size: .8em; margin: 12px 0 0; }
+    .reveal .green { background: #eef7f0; border-top-color: #287247; }
+    .reveal .callout { border-left: 5px solid var(--blue); padding: 14px 22px; background: #eaf3fc; margin: 24px 0; font-size: .85em; }
+    .reveal code { font-family: Consolas, monospace; font-size: .85em; }
+    .reveal pre { width: 100%; margin: 20px 0; box-shadow: none; font-size: .61em; }
+    .reveal pre code { padding: 22px; background: rgba(242, 245, 248, .92); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); max-height: none; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .reveal table { font-size: .67em; width: 100%; }
+    .reveal th, .reveal td { padding: 14px 12px; border-bottom: 1px solid var(--line); }
+    .reveal .flow { display: flex; align-items: center; gap: 14px; margin: 30px 0; }
+    .reveal .flow .card { flex: 1; font-size: .8em; }
+    .reveal .arrow { color: var(--blue); font-weight: bold; }
+    .reveal .references { font-size: .63em; line-height: 1.7; }
+    #load-error { font: 18px/1.5 system-ui, sans-serif; padding: 20px; margin: 20px; border: 2px solid #a92323; color: #701717; background: #fff; }
+    #load-error[hidden] { display: none; }
+    @media print { .reveal .source { font-size: 15px; } }
+  </style>
+</head>
+<body>
+  <div id="load-error" role="alert" hidden></div>
+  <noscript>This presentation requires JavaScript. Enable it to navigate the Reveal.js slides.</noscript>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <p class="eyebrow">Decision models / a short field guide</p>
+        <h1>From chat<br>to judgment.</h1>
+        <p class="subtitle">Starting with Jev: why System One models exist, what to ask them, and what happens behind the API.</p>
+        <div class="callout">State in. Typed decisions out. Your code stays in control.</div>
+        <p class="small">Arrow keys: navigate · Esc: overview · S: speaker notes · ~10 minutes</p>
+        <p class="source">Research checked October 26, 2026.</p>
+        <aside class="notes">Start with a concrete contrast: asking a chatbot to write an explanation versus asking a model which queue should receive a ticket. This deck is an introduction, not a performance comparison.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">01 / Start with Jev</p>
+        <h2>A model for software, not conversation</h2>
+        <div class="grid">
+          <div class="card"><h3>Jev, by TypeSafe AI</h3><p>Evaluates text or JSON against questions. Returns typed values and probability distributions rather than prose.</p></div>
+          <div class="card green"><h3>Why “Jev”?</h3><p>Named after William Stanley Jevons: cheaper, more efficient intelligence could unlock many more uses.</p></div>
+        </div>
+        <p>Think: routing, policy checks, prioritization, and focused evaluations inside ordinary software.</p>
+        <p class="source">Sources: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe's Jev announcement</a> · <a href="https://docs.typesafe.ai/introduction">Jev introduction</a></p>
+        <aside class="notes">TypeSafe describes Jev as its first public System One model. Jev currently accepts text, including JSON and arrays of text, not images, audio, or video. Jev is not a Microsoft model; do not imply that Microsoft-Decision-1 or OpenAI shares its weights, architecture, or training recipe.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">02 / The name</p>
+        <h2>Why “System One”?</h2>
+        <div class="grid">
+          <div class="card green"><h3>System 1: fast judgment</h3><p>“Does this ticket request a refund?”</p><p>A focused determination given the relevant context.</p></div>
+          <div class="card"><h3>System 2: deliberation</h3><p>“Investigate why refunds increased and propose a plan.”</p><p>A multi-step task requiring investigation and synthesis.</p></div>
+        </div>
+        <div class="callout">The name borrows Kahneman's fast/slow thinking metaphor. It is not a claim that a model has a human mind.</div>
+        <p class="source">Source: <a href="https://docs.typesafe.ai/concepts/system-one.md">TypeSafe: System One</a></p>
+        <aside class="notes">This is a workload distinction, not a universal taxonomy of neural architectures. Fast does not mean infallible. A decision model can hand ambiguous cases to a reasoning model or human rather than trying to solve an entire workflow in one judgment.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">03 / The contract</p>
+        <h2>Replace “write an answer” with a question</h2>
+        <div class="flow" aria-label="State and questions go to a decision model, then typed answers go to application policy">
+          <div class="card">State +<br>typed questions</div><span class="arrow" aria-hidden="true">→</span>
+          <div class="card">Decision<br>model</div><span class="arrow" aria-hidden="true">→</span>
+          <div class="card green">Typed answers<br>+ probabilities</div>
+        </div>
+        <ul>
+          <li><strong>State:</strong> the evidence and policy needed for the decision.</li>
+          <li><strong>Question:</strong> one bounded judgment with a clear answer space.</li>
+          <li><strong>Application:</strong> validates, thresholds, routes, and authorizes.</li>
+        </ul>
+        <p class="source">Sources: <a href="https://docs.typesafe.ai/introduction">Jev introduction</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft-Decision-1 guide</a></p>
+        <aside class="notes">An HTTP response may be serialized as JSON even though the model itself does not generate a free-form JSON string token by token. Separate the API wire format from how the model produces its decisions. A typed answer is not authorization to execute an action.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">04 / Question one</p>
+        <h2>Predicate / Noul: “Is this true?”</h2>
+        <div class="grid">
+          <div class="card"><h3>Express eligibility</h3><p>“Is this order eligible for express fulfillment based on inventory, destination, and risk?”</p></div>
+          <div class="card green"><h3>A probability, not a verdict</h3><p>Illustrative answer: <strong>0.93</strong></p><p>An estimate that the condition is true; your code chooses what to do with it.</p></div>
+        </div>
+        <p class="small"><code>predicate</code> in OpenAI Decisions; <code>noul</code> in Jev and Microsoft-Decision-1.</p>
+        <div class="callout">Specify the condition clearly. Missing evidence is not automatically proof that it is false.</div>
+        <p class="source">Sources: <a href="https://docs.typesafe.ai/primitives/noul.md">Noul</a> · <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI question types</a></p>
+        <aside class="notes">0.93 is made up for teaching, not captured from a request. The APIs use different response field names; this slide illustrates the semantic value rather than a portable response object. Define how unknown or conflicting evidence should be handled and evaluate that behavior.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">05 / Question two</p>
+        <h2>Choice: “Which option fits?”</h2>
+        <p>“Which fulfillment action best fits the available inventory and delivery requirements?”</p>
+        <table>
+          <thead><tr><th>Allowed option</th><th>Illustrative probability</th></tr></thead>
+          <tbody>
+            <tr><td>Nearby warehouse + express</td><td>0.76</td></tr>
+            <tr><td>Distant warehouse + standard</td><td>0.14</td></tr>
+            <tr><td>Backorder</td><td>0.03</td></tr>
+            <tr><td>Manual review</td><td>0.07</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">Use descriptive, distinct categories. Add an “other” or review option when the domain needs one.</div>
+        <p class="source">Sources: <a href="https://docs.typesafe.ai/primitives/choice.md">Choice</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Foundry guide</a>. Values shown are synthetic.</p>
+        <aside class="notes">Choice categories are not ordered. A forced answer from an incomplete option list can be semantically wrong while remaining perfectly well typed. Consider the top probability, uncertainty, and business cost when deciding whether to route or escalate.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">06 / Question three</p>
+        <h2>Score: “How much, on this rubric?”</h2>
+        <p>Define an <strong>ordered</strong> scale, not a vague “rate this out of ten.”</p>
+        <table>
+          <thead><tr><th>Index</th><th>Urgency level</th><th>Illustrative probability</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>Low: no time pressure</td><td>0.05</td></tr>
+            <tr><td>1</td><td>Normal: routine shipment</td><td>0.15</td></tr>
+            <tr><td>2</td><td>High: shipping cutoff approaching</td><td>0.60</td></tr>
+            <tr><td>3</td><td>Critical: commitment immediately at risk</td><td>0.20</td></tr>
+          </tbody>
+        </table>
+        <div class="callout"><strong>Score = Σ index × probability = 1.95</strong><br>For OpenAI Decisions and Microsoft-Decision-1, a score can fall between levels.</div>
+        <p class="source">Sources: <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI score semantics</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft score semantics</a>. Synthetic values.</p>
+        <aside class="notes">The arithmetic is 0 times .05 plus 1 times .15 plus 2 times .60 plus 3 times .20, or 1.95. The scale runs from zero to three, not zero to one hundred. A score is not the probability that a condition is true. Treat it as rubric-based ordering, not an absolute measurement of urgency.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">07 / Inside Jev: inference</p>
+        <h2>Parallel decisions, not a paragraph</h2>
+        <div class="grid">
+          <div class="card"><h3>Generative response</h3><p>Produce successive text tokens, each conditioned on earlier tokens. Parse the output if your code needs a decision.</p></div>
+          <div class="card green"><h3>Jev's published approach</h3><p>A decision-focused architecture and parallel sampler produce bounded outputs. Questions evaluate independently against the same state.</p></div>
+        </div>
+        <div class="callout">Conceptual path: encode context + questions → evaluate allowed outcomes → return typed values and distributions.</div>
+        <p class="small">The path is a teaching abstraction, not a disclosed layer diagram. Do not assume Jev's implementation applies to other vendors.</p>
+        <p class="source">Sources: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">Jev announcement</a> · <a href="https://docs.typesafe.ai/introduction">Parallel question evaluation</a></p>
+        <aside class="notes">The announcement describes a new architecture and parallel sampler but the sources cited here do not provide a full layer-by-layer specification, parameter count, or exact forward-pass count. Avoid inventing an encoder, classification head, or softmax implementation. Questions in one Jev call are independent: one answer is not fed into another. Use a second call when a later question needs an earlier answer. JSON mode in an LLM constrains text output; it does not by itself establish this inference architecture.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">08 / Inside Jev: training</p>
+        <h2>Optimize the uncertainty, too</h2>
+        <div class="three grid">
+          <div class="card"><h3>RLHF</h3><p>Human feedback: optimize responses people prefer.</p></div>
+          <div class="card"><h3>RLVR</h3><p>Verifiable rewards: optimize outcomes that can be checked.</p></div>
+          <div class="card green"><h3>RLCD</h3><p>TypeSafe's reinforcement learning for calibrated decisions: optimize decisions and their probabilities.</p></div>
+        </div>
+        <p>If a model assigns <strong>0.8</strong> to many events, calibration asks whether roughly <strong>80%</strong> of those events occur.</p>
+        <p class="small">A population-level property, not a guarantee about one answer. These are training objectives, not a complete or exclusive training recipe.</p>
+        <p class="source">Source: <a href="https://docs.typesafe.ai/introduction/machine-learning-primer.md">TypeSafe's AI primer</a></p>
+        <aside class="notes">Attribute RLCD to TypeSafe, not to Microsoft-Decision-1 or OpenAI. The public primer does not disclose a complete reward formula, dataset, or training implementation. Evaluate calibration on representative local data, especially after a domain shift. Constrained outputs prevent arbitrary prose; they do not prevent incorrect classifications.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">09 / The Foundry examples</p>
+        <h2>Similar questions. Different contracts.</h2>
+        <table>
+          <thead><tr><th>Surface</th><th>OpenAI Decisions</th><th>Microsoft-Decision-1</th></tr></thead>
+          <tbody>
+            <tr><td>POST path</td><td><code>/openai/v1/decisions</code></td><td><code>/providers/microsoft/v1/systemone</code></td></tr>
+            <tr><td>Evidence</td><td><code>input</code></td><td><code>state</code></td></tr>
+            <tr><td>Questions</td><td>Array, each with a <code>name</code></td><td>Object keyed by question name</td></tr>
+            <tr><td>True / false</td><td><code>predicate</code></td><td><code>noul</code></td></tr>
+            <tr><td>Choice / score options</td><td><code>choices</code> / <code>levels</code></td><td><code>criteria</code></td></tr>
+          </tbody>
+        </table>
+        <p class="small">The local OpenAI collection uses <code>gpt-6-luna</code>; the Microsoft collection uses your deployment name. Verify availability before running.</p>
+        <p class="source">Explore: <a href="./openai-decisions.http">openai-decisions.http</a> · <a href="./microsoft-decision-1.http">microsoft-decision-1.http</a> · <a href="./README.md">setup guide</a></p>
+        <aside class="notes">These examples share scenarios, not interchangeable schemas. Model names and availability can change. Microsoft-Decision-1 is a model; OpenAI Decisions is an API surface. A similar API contract is not evidence of common model lineage. The HTTP files currently have masked Authorization placeholders: setting their apiKey variables alone does not authenticate them.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">10 / Example: OpenAI Decisions</p>
+        <h2>One predicate, one request</h2>
+<pre><code class="language-http">POST {{baseUrl}}/decisions
+
+{
+  "model": "gpt-6-luna",
+  "input": "Order #A104: VIP customer, paid $240, express delivery requested, 2 units in stock at nearby warehouse, destination within express service area, no fraud indicators.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "express_eligible",
+      "instructions": "Is this order eligible for express fulfillment based on inventory, destination, and risk?"
+    }
+  ]
+}</code></pre>
+        <p>Expect a <strong>probability</strong> for <code>express_eligible</code>; your code decides the threshold.</p>
+        <p class="source">From <a href="./openai-decisions.http">openai-decisions.http</a>, request 1. Authentication and response omitted; see <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions guide</a>.</p>
+        <aside class="notes">This is the first request in the local OpenAI collection. The endpoint is under the Foundry resource's /openai/v1 base URL. Note the questions array and the predicate type name. Run the request live if you have a deployment; otherwise discuss the shape only.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">11 / Example: Microsoft-Decision-1</p>
+        <h2>The same predicate, different contract</h2>
+<pre><code class="language-http">POST {{baseUrl}}/providers/microsoft/v1/systemone
+
+{
+  "model": "{{deployment}}",
+  "state": "Order #A104: VIP customer, paid $240, express delivery requested, 2 units in stock at nearby warehouse, destination within express service area, no fraud indicators.",
+  "questions": {
+    "express_eligible": {
+      "type": "noul",
+      "instructions": "Is this order eligible for express fulfillment based on inventory, destination, and risk?"
+    }
+  }
+}</code></pre>
+        <p>Expect a <strong>probability from 0 to 1</strong> under <code>answers.express_eligible</code>.</p>
+        <p class="source">From <a href="./microsoft-decision-1.http">microsoft-decision-1.http</a>, request 1. Authentication and response omitted; see the <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft-Decision-1 guide</a>.</p>
+        <aside class="notes">Compare line by line with the previous slide: state instead of input, a questions object keyed by name, and noul instead of predicate. The model value is your deployment name. The Learn guide says the response answers object uses your question names.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">12 / Compose judgments</p>
+        <h2>One incident. Several atomic questions.</h2>
+        <p class="small">Checkout errors at 38%; connection pool at 99%; a recent deploy; rollback requires approval.</p>
+        <div class="grid">
+          <div class="card"><h3>Ask the model</h3><p>Is production affected?<br>Is rollback supported by evidence?<br>Which specialist should diagnose?<br>How severe is the impact?</p></div>
+          <div class="card green"><h3>Keep in code</h3><p>Enforce approval rules.<br>Apply evaluated thresholds.<br>Escalate uncertain results.<br>Log the evidence and outcome.</p></div>
+        </div>
+        <div class="callout">A recent deployment is evidence to investigate, not proof that rollback is the correct action.</div>
+        <p class="source">Local walkthrough: request 5 in <a href="./microsoft-decision-1.http">Microsoft-Decision-1</a> and <a href="./openai-decisions.http">OpenAI Decisions</a>.</p>
+        <aside class="notes">Invite the audience to distinguish evidence, judgment, and permission. A model can recommend inspecting database metrics without having database credentials. Policy constraints such as human approval should remain hard checks, not optional natural-language suggestions.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">13 / Put it to work</p>
+        <h2>Typed does not mean true</h2>
+        <ul>
+          <li><strong>Define:</strong> atomic questions, complete options, concrete rubrics.</li>
+          <li><strong>Evaluate:</strong> labeled cases, hard negatives, missing evidence, and domain shifts.</li>
+          <li><strong>Measure:</strong> decision quality, calibration, latency, and cost.</li>
+          <li><strong>Control:</strong> deterministic policy checks, explicit review paths, and audit logs.</li>
+        </ul>
+        <div class="callout">Use a decision model for a bounded judgment.<br>Use a reasoning model or human when the task needs investigation or explanation.</div>
+        <p class="source">Further reading: <a href="https://docs.typesafe.ai/concepts/system-one.md">System One workflows</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Foundry threshold guidance</a></p>
+        <aside class="notes">There is no universally safe probability threshold. Evaluate false positives and false negatives against the real business costs. Do not treat a model's probability as a security boundary or a substitute for authentication, authorization, deterministic validation, or human approval.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">14 / Keep exploring</p>
+        <h2>Read. Run. Compare.</h2>
+        <ul class="references">
+          <li><a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe: Introducing System One Models &amp; Jev</a></li>
+          <li><a href="https://docs.typesafe.ai/concepts/system-one.md">System One concepts</a> · <a href="https://docs.typesafe.ai/introduction/machine-learning-primer.md">RLCD and calibration primer</a></li>
+          <li><a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/azure-openai-decisions-api-now-generally-available-in-microsoft-foundry/4567265">Azure OpenAI Decisions API: Now generally available in Microsoft Foundry</a></li>
+          <li><a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-microsoft-decision-1-in-microsoft-foundry-for-decision-and-classific/4562742">Introducing Microsoft-Decision-1 in Microsoft Foundry for decision and classification workloads</a></li>
+          <li><a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions guide</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft-Decision-1 guide</a></li>
+          <li><a href="./README.md">Local setup</a> · <a href="./openai-decisions.http">OpenAI requests</a> · <a href="./microsoft-decision-1.http">Microsoft requests</a></li>
+        </ul>
+        <p class="small">Built with <a href="https://revealjs.com/">Reveal.js</a>. All example probabilities are illustrative, not benchmark results.</p>
+        <aside class="notes">Suggested exercise: run the express-eligibility request, remove the inventory evidence, then compare the result. Repeat with a rubric change. Observe the output rather than assuming the synthetic numbers in the slides will be reproduced.</aside>
+      </section>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/notes/notes.js"></script>
+  <script>
+    const errorBanner = document.getElementById("load-error");
+    function showLoadError(message) {
+      errorBanner.textContent = message;
+      errorBanner.hidden = false;
+    }
+    if (typeof Reveal === "undefined" || typeof RevealNotes === "undefined") {
+      showLoadError("The presentation libraries could not load. Check your internet connection and access to cdn.jsdelivr.net, then reload.");
+    } else {
+      Reveal.initialize({
+        hash: true,
+        controls: true,
+        progress: true,
+        slideNumber: "c/t",
+        width: 1200,
+        height: 760,
+        margin: 0.05,
+        center: true,
+        transition: "none",
+        plugins: [RevealNotes]
+      }).catch((error) => {
+        console.error("Reveal.js initialization failed:", error);
+        showLoadError("The presentation could not start. See the browser console for details.");
+      });
+    }
+  </script>
+</body>
+</html>

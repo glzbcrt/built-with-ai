@@ -1,0 +1,251 @@
+
+# OpenAI Decisions API — GPT-6 Luna
+# Docs: https://developers.openai.com/api/docs/guides/decisions
+
+@baseUrl = https://YOUR-FOUNDRY-RESOURCE.services.ai.azure.com/openai/v1
+@apiKey = REPLACE_WITH_OPENAI_API_KEY
+
+### 1. Order fulfillment — Predicate
+POST {{baseUrl}}/decisions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "gpt-6-luna",
+  "input": "Order #A104: VIP customer, paid $240, express delivery requested, 2 units in stock at nearby warehouse, destination within express service area, no fraud indicators.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "express_eligible",
+      "instructions": "Is this order eligible for express fulfillment based on inventory, destination, and risk?"
+    }
+  ]
+}
+
+### 2. Order fulfillment — Choice
+POST {{baseUrl}}/decisions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "gpt-6-luna",
+  "input": "Order #A104: VIP customer, express delivery requested, nearby warehouse has 2 units, distant warehouse has 20, destination within express service area.",
+  "questions": [
+    {
+      "type": "choice",
+      "name": "fulfillment_action",
+      "instructions": "Select the best fulfillment action using available inventory and delivery requirements.",
+      "choices": [
+        {
+          "value": "nearby_express",
+          "description": "Ship from nearby warehouse using express service"
+        },
+        {
+          "value": "distant_standard",
+          "description": "Ship from distant warehouse using standard service"
+        },
+        {
+          "value": "backorder",
+          "description": "Wait for restocking"
+        },
+        {
+          "value": "manual_review",
+          "description": "Escalate to human fulfillment operator"
+        }
+      ]
+    }
+  ]
+}
+
+### 3. Order fulfillment — Score
+POST {{baseUrl}}/decisions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "gpt-6-luna",
+  "input": "Order #A104: VIP customer, express delivery promised tomorrow, warehouse cutoff in 45 minutes, stock available.",
+  "questions": [
+    {
+      "type": "score",
+      "name": "urgency",
+      "instructions": "Rate fulfillment urgency from lowest to highest.",
+      "levels": [
+        {
+          "label": "Low",
+          "description": "No time pressure"
+        },
+        {
+          "label": "Normal",
+          "description": "Routine shipment"
+        },
+        {
+          "label": "High",
+          "description": "Short time until shipping cutoff"
+        },
+        {
+          "label": "Critical",
+          "description": "Immediate action required to avoid missing a contractual commitment"
+        }
+      ]
+    }
+  ]
+}
+
+### 4. Order fulfillment — Multiple decisions
+POST {{baseUrl}}/decisions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "gpt-6-luna",
+  "input": "Order #A105: first-time buyer, $1,800 electronics order, express requested, billing and shipping addresses differ, inventory available only at distant warehouse, delivery promised within 24 hours.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "needs_fraud_review",
+      "instructions": "Does this order show enough risk indicators to warrant fraud review?"
+    },
+    {
+      "type": "choice",
+      "name": "next_action",
+      "instructions": "Which action is most appropriate given the available evidence?",
+      "choices": [
+        {
+          "value": "ship",
+          "description": "Release for shipping"
+        },
+        {
+          "value": "verify",
+          "description": "Request customer verification"
+        },
+        {
+          "value": "review",
+          "description": "Send to a human risk reviewer"
+        },
+        {
+          "value": "hold",
+          "description": "Temporarily hold fulfillment"
+        }
+      ]
+    },
+    {
+      "type": "score",
+      "name": "fulfillment_risk",
+      "instructions": "Rate the risk of fulfillment failure, not financial fraud, from lowest to highest.",
+      "levels": [
+        {
+          "label": "Minimal",
+          "description": "All logistics constraints satisfied"
+        },
+        {
+          "label": "Low",
+          "description": "Minor uncertainty"
+        },
+        {
+          "label": "Elevated",
+          "description": "Delivery commitment may be missed"
+        },
+        {
+          "label": "Severe",
+          "description": "Strong evidence commitment cannot be met"
+        }
+      ]
+    }
+  ]
+}
+
+### 5. Incident response — Multiple decisions
+POST {{baseUrl}}/decisions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "gpt-6-luna",
+  "input": "Incident INC-482: checkout API 500 errors rose to 38% for 12 minutes. Database connection pool at 99%, CPU normal. Recent application deployment 15 minutes ago. No confirmed root cause. Production revenue impacted. Rollback requires human approval.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "production_impact",
+      "instructions": "Is there evidence of an active customer-facing production impact?"
+    },
+    {
+      "type": "predicate",
+      "name": "enough_evidence_for_rollback",
+      "instructions": "Is the evidence sufficient to conclude rollback is the correct remediation without further investigation?"
+    },
+    {
+      "type": "choice",
+      "name": "specialist",
+      "instructions": "Which specialist should lead diagnosis?",
+      "choices": [
+        {
+          "value": "application",
+          "description": "Application and deployment specialist"
+        },
+        {
+          "value": "database",
+          "description": "Database and connection management specialist"
+        },
+        {
+          "value": "network",
+          "description": "Network specialist"
+        },
+        {
+          "value": "other",
+          "description": "Other or general incident commander"
+        }
+      ]
+    },
+    {
+      "type": "choice",
+      "name": "agent_next_step",
+      "instructions": "Choose the next safe diagnostic step. Do not execute remediation.",
+      "choices": [
+        {
+          "value": "inspect_deploy",
+          "description": "Inspect deployment changes and timing"
+        },
+        {
+          "value": "inspect_db",
+          "description": "Inspect database connection and pool metrics"
+        },
+        {
+          "value": "collect_traces",
+          "description": "Collect distributed traces"
+        },
+        {
+          "value": "escalate",
+          "description": "Escalate to on-call incident commander"
+        }
+      ]
+    },
+    {
+      "type": "score",
+      "name": "severity",
+      "instructions": "Rate business incident severity from least to most severe.",
+      "levels": [
+        {
+          "label": "SEV4",
+          "description": "Cosmetic or negligible impact"
+        },
+        {
+          "label": "SEV3",
+          "description": "Minor degradation"
+        },
+        {
+          "label": "SEV2",
+          "description": "Significant partial production disruption"
+        },
+        {
+          "label": "SEV1",
+          "description": "Major customer-facing outage"
+        },
+        {
+          "label": "SEV0",
+          "description": "Widespread critical emergency"
+        }
+      ]
+    }
+  ]
+}

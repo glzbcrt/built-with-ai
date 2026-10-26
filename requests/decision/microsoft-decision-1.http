@@ -1,0 +1,154 @@
+
+# Microsoft-Decision-1 — Microsoft Foundry
+# Docs: https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision
+
+@baseUrl = https://YOUR-FOUNDRY-RESOURCE.services.ai.azure.com
+@deployment = YOUR_DEPLOYMENT_NAME
+@apiKey = REPLACE_WITH_FOUNDRY_API_KEY
+
+### 1. Order fulfillment — Noul (Predicate)
+POST {{baseUrl}}/providers/microsoft/v1/systemone
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "{{deployment}}",
+  "state": "Order #A104: VIP customer, paid $240, express delivery requested, 2 units in stock at nearby warehouse, destination within express service area, no fraud indicators.",
+  "questions": {
+    "express_eligible": {
+      "type": "noul",
+      "instructions": "Is this order eligible for express fulfillment based on inventory, destination, and risk?"
+    }
+  }
+}
+
+### 2. Order fulfillment — Choice
+POST {{baseUrl}}/providers/microsoft/v1/systemone
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "{{deployment}}",
+  "state": "Order #A104: VIP customer, express delivery requested, nearby warehouse has 2 units, distant warehouse has 20, destination within express service area.",
+  "questions": {
+    "fulfillment_action": {
+      "type": "choice",
+      "instructions": "Select the best fulfillment action using available inventory and delivery requirements.",
+      "criteria": {
+        "nearby_express": "Ship from nearby warehouse using express service",
+        "distant_standard": "Ship from distant warehouse using standard service",
+        "backorder": "Wait for restocking",
+        "manual_review": "Escalate to human fulfillment operator"
+      }
+    }
+  }
+}
+
+### 3. Order fulfillment — Score
+POST {{baseUrl}}/providers/microsoft/v1/systemone
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "{{deployment}}",
+  "state": "Order #A104: VIP customer, express delivery promised tomorrow, warehouse cutoff in 45 minutes, stock available.",
+  "questions": {
+    "urgency": {
+      "type": "score",
+      "instructions": "Rate fulfillment urgency from lowest to highest.",
+      "criteria": [
+        "Low: no time pressure",
+        "Normal: routine shipment",
+        "High: short time until shipping cutoff",
+        "Critical: immediate action required to avoid missing a contractual commitment"
+      ]
+    }
+  }
+}
+
+### 4. Order fulfillment — Multiple decisions
+POST {{baseUrl}}/providers/microsoft/v1/systemone
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "{{deployment}}",
+  "state": "Order #A105: first-time buyer, $1,800 electronics order, express requested, billing and shipping addresses differ, inventory available only at distant warehouse, delivery promised within 24 hours.",
+  "questions": {
+    "needs_fraud_review": {
+      "type": "noul",
+      "instructions": "Does this order show enough risk indicators to warrant fraud review?"
+    },
+    "next_action": {
+      "type": "choice",
+      "instructions": "Which action is most appropriate given the available evidence?",
+      "criteria": {
+        "ship": "Release for shipping",
+        "verify": "Request customer verification",
+        "review": "Send to a human risk reviewer",
+        "hold": "Temporarily hold fulfillment"
+      }
+    },
+    "fulfillment_risk": {
+      "type": "score",
+      "instructions": "Rate the risk of fulfillment failure, not financial fraud, from lowest to highest.",
+      "criteria": [
+        "Minimal: all logistics constraints satisfied",
+        "Low: minor uncertainty",
+        "Elevated: delivery commitment may be missed",
+        "Severe: strong evidence commitment cannot be met"
+      ]
+    }
+  }
+}
+
+### 5. Incident response — Multiple decisions
+POST {{baseUrl}}/providers/microsoft/v1/systemone
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "model": "{{deployment}}",
+  "state": "Incident INC-482: checkout API 500 errors rose to 38% for 12 minutes. Database connection pool at 99%, CPU normal. Recent application deployment 15 minutes ago. No confirmed root cause. Production revenue impacted. Rollback requires human approval.",
+  "questions": {
+    "production_impact": {
+      "type": "noul",
+      "instructions": "Is there evidence of an active customer-facing production impact?"
+    },
+    "enough_evidence_for_rollback": {
+      "type": "noul",
+      "instructions": "Is the evidence sufficient to conclude rollback is the correct remediation without further investigation?"
+    },
+    "specialist": {
+      "type": "choice",
+      "instructions": "Which specialist should lead diagnosis?",
+      "criteria": {
+        "application": "Application and deployment specialist",
+        "database": "Database and connection management specialist",
+        "network": "Network specialist",
+        "other": "Other or general incident commander"
+      }
+    },
+    "agent_next_step": {
+      "type": "choice",
+      "instructions": "Choose the next safe diagnostic step. Do not execute remediation.",
+      "criteria": {
+        "inspect_deploy": "Inspect deployment changes and timing",
+        "inspect_db": "Inspect database connection and pool metrics",
+        "collect_traces": "Collect distributed traces",
+        "escalate": "Escalate to on-call incident commander"
+      }
+    },
+    "severity": {
+      "type": "score",
+      "instructions": "Rate business incident severity from least to most severe.",
+      "criteria": [
+        "SEV4: cosmetic or negligible impact",
+        "SEV3: minor degradation",
+        "SEV2: significant partial production disruption",
+        "SEV1: major customer-facing outage",
+        "SEV0: widespread critical emergency"
+      ]
+    }
+  }
+}
