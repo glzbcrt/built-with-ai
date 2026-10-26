@@ -79,3 +79,9 @@ Explore larger, multi-file applications in the [apps folder](./apps/). Unlike th
 Compare two ways to turn the same prompt into an interactive interface: composing predefined components and actions from structured JSON, or generating HTML, CSS, and JavaScript. Inspect requests, responses, schemas, source, and execution state to understand how each approach works. Try deterministic examples in Demo mode, or connect Azure OpenAI for live generation; generated JavaScript runs only after an explicit Run action in a sandboxed preview.
 
 Requires Node.js 22.9+ with no dependency installation. See the [GenUI setup and walkthrough](./apps/genui/README.md) to get started.
+
+### [🧭 Decision Models](./requests/decision/README.md)
+
+Explore decision models that answer bounded questions about text or JSON with typed results and probabilities instead of free-form text. A short Reveal.js deck introduces Jev, System One models, question types, and how they work, while two HTTP collections compare Microsoft-Decision-1 and the OpenAI Decisions API using the same order-fulfillment and incident-response scenarios.
+
+Requires a Microsoft Foundry resource to run the HTTP requests. See the [Decision Models guide](./requests/decision/README.md) for setup, the slide deck, and references.
