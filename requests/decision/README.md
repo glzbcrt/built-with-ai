@@ -76,7 +76,7 @@ Each question includes `instructions` describing the decision to make. The combi
 
 ## 📚 References
 
-- [Azure OpenAI Decisions API: Now generally available in Microsoft Foundry | Microsoft Community Hub](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/azure-openai-decisions-api-now-generally-available-in-microsoft-foundry/4567265)
-- [Introducing Microsoft-Decision-1 in Microsoft Foundry for decision and classification workloads | Microsoft Community Hub](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-microsoft-decision-1-in-microsoft-foundry-for-decision-and-classific/4562742)
+- [Azure OpenAI Decisions API: Now generally available in Microsoft Foundry](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/azure-openai-decisions-api-now-generally-available-in-microsoft-foundry/4567265)
+- [Introducing Microsoft-Decision-1 in Microsoft Foundry for decision and classification workloads](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-microsoft-decision-1-in-microsoft-foundry-for-decision-and-classific/4562742)
 - [OpenAI Decisions API guide](https://developers.openai.com/api/docs/guides/decisions)
 - [Use Microsoft-Decision-1 in Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision)
