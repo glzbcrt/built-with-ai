@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A short introduction to decision models: Jev, System One, typed questions, probabilities, and Microsoft Foundry examples.">
+  <meta name="description" content="Decision models explained: what they are, Jev's System One origins, three question types, how they work and why they are fast, Microsoft-Decision-1, OpenAI Decisions, and five sample requests.">
   <title>Decision Models: From Chat to Judgment</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reset.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css">
@@ -39,11 +39,23 @@
     .reveal .three { grid-template-columns: repeat(3, 1fr); }
     .reveal .card { border: 1px solid var(--line); border-top: 5px solid var(--blue); border-radius: 10px; padding: 22px; background: #f6f9fc; }
     .reveal .card p { font-size: .8em; margin: 12px 0 0; }
+    .reveal .use-cases .card { padding: 18px; }
+    .reveal .use-cases .card h3 { font-size: .95em; }
+    .reveal .use-cases .card p { font-size: .73em; }
     .reveal .green { background: #eef7f0; border-top-color: #287247; }
     .reveal .callout { border-left: 5px solid var(--blue); padding: 14px 22px; background: #eaf3fc; margin: 24px 0; font-size: .85em; }
     .reveal code { font-family: Consolas, monospace; font-size: .85em; }
     .reveal pre { width: 100%; margin: 20px 0; box-shadow: none; font-size: .61em; }
     .reveal pre code { padding: 22px; background: rgba(242, 245, 248, .92); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); max-height: none; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .reveal .request-pair { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; margin: 18px 0; align-items: start; }
+    .reveal .request-pair > div { min-width: 0; }
+    .reveal .request-pair h3 { font-size: .6em; margin: 0 0 8px; }
+    .reveal .request pre { font-size: .5em; margin: 0; }
+    .reveal .request pre code { padding: 14px; line-height: 1.25; }
+    .reveal .request .response code { background: rgba(238, 247, 240, .94); border-color: #b7d1bf; }
+    .reveal .request.dense pre { font-size: .47em; }
+    .reveal .request h2 { margin-bottom: 16px; }
+    .reveal .request .source { margin-top: 16px; }
     .reveal table { font-size: .67em; width: 100%; }
     .reveal th, .reveal td { padding: 14px 12px; border-bottom: 1px solid var(--line); }
     .reveal .flow { display: flex; align-items: center; gap: 14px; margin: 30px 0; }
@@ -63,27 +75,56 @@
       <section>
         <p class="eyebrow">Decision models / a short field guide</p>
         <h1>From chat<br>to judgment.</h1>
-        <p class="subtitle">Starting with Jev: why System One models exist, what to ask them, and what happens behind the API.</p>
+        <p class="subtitle">Decision models: what they are, where Jev fits, and how focused questions become software control flow.</p>
         <div class="callout">State in. Typed decisions out. Your code stays in control.</div>
-        <p class="small">Arrow keys: navigate · Esc: overview · S: speaker notes · ~10 minutes</p>
-        <p class="source">Research checked October 26, 2026.</p>
+        <p class="small">Arrow keys: navigate · Esc: overview · S: speaker notes · ~18 minutes</p>
+        <p class="source">Research checked October 27, 2026.</p>
         <aside class="notes">Start with a concrete contrast: asking a chatbot to write an explanation versus asking a model which queue should receive a ticket. This deck is an introduction, not a performance comparison.</aside>
       </section>
 
       <section>
-        <p class="eyebrow">01 / Start with Jev</p>
-        <h2>A model for software, not conversation</h2>
+        <p class="eyebrow">The category / What are decision models?</p>
+        <h2>Intelligence that returns a decision</h2>
+        <p>A decision model evaluates supplied evidence against <strong>bounded questions</strong> and returns <strong>typed values and probabilities</strong>, rather than an open-ended written response.</p>
         <div class="grid">
-          <div class="card"><h3>Jev, by TypeSafe AI</h3><p>Evaluates text or JSON against questions. Returns typed values and probability distributions rather than prose.</p></div>
-          <div class="card green"><h3>Why “Jev”?</h3><p>Named after William Stanley Jevons: cheaper, more efficient intelligence could unlock many more uses.</p></div>
+          <div class="card"><h3>Generative task</h3><p>“Write a reply to this customer.”</p><p>The output is a new piece of content.</p></div>
+          <div class="card green"><h3>Decision task</h3><p>“Which team should handle this message?”</p><p>The output fits a defined answer space your code can use.</p></div>
         </div>
-        <p>Think: routing, policy checks, prioritization, and focused evaluations inside ordinary software.</p>
-        <p class="source">Sources: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe's Jev announcement</a> · <a href="https://docs.typesafe.ai/introduction">Jev introduction</a></p>
-        <aside class="notes">TypeSafe describes Jev as its first public System One model. Jev currently accepts text, including JSON and arrays of text, not images, audio, or video. Jev is not a Microsoft model; do not imply that Microsoft-Decision-1 or OpenAI shares its weights, architecture, or training recipe.</aside>
+        <div class="callout">Classification, routing, prioritization, and evaluation inside software. Not a replacement for every reasoning or generation task.</div>
+        <p class="source">Sources: <a href="https://docs.typesafe.ai/concepts/system-one.md">System One concepts</a> · <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions overview</a></p>
+        <aside class="notes">Introduce the category before the products. Classification is not new; the focus here is natural-language-defined, bounded judgments exposed as reusable AI primitives. A generative model with JSON output can also classify, but a constrained wire format alone does not establish a decision-focused inference architecture.</aside>
+      </section>
+
+      <section class="use-cases">
+        <p class="eyebrow">Use cases / Where a focused judgment helps</p>
+        <h2>Small decisions. Everywhere in software.</h2>
+        <div class="three grid">
+          <div class="card"><h3>Route requests</h3><p>Which team, queue, model, or tool fits this request?</p></div>
+          <div class="card green"><h3>Prioritize work</h3><p>How urgent is this ticket or incident on our rubric?</p></div>
+          <div class="card"><h3>Flag for review</h3><p>Does this order contain indicators that warrant a closer look?</p></div>
+          <div class="card"><h3>Evaluate outputs</h3><p>Does this agent's answer meet the supplied acceptance criteria?</p></div>
+          <div class="card green"><h3>Guide workflows</h3><p>Is there enough evidence to continue, retry, or escalate?</p></div>
+          <div class="card"><h3>Organize content</h3><p>Which category fits this document, and how relevant is it?</p></div>
+        </div>
+        <div class="callout">Best fit: evidence is available, the answer space is bounded, and your application knows how to use the result.</div>
+        <p class="source">Sources: <a href="https://docs.typesafe.ai/concepts/system-one.md">System One workflows</a> · <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions use cases</a></p>
+        <aside class="notes">Use this third slide to connect the category to practical work before discussing vendors. Routing and categorization use choices; urgency and relevance use scores; acceptance checks and evidence gates use predicates. These are judgments, not permissions: keep authorization, inventory checks, and human approval in deterministic application code. A risk flag is a request for review, not proof of wrongdoing.</aside>
       </section>
 
       <section>
-        <p class="eyebrow">02 / The name</p>
+        <p class="eyebrow">Origins / Jev and System One</p>
+        <h2>Jev introduced the System One class</h2>
+        <div class="grid">
+          <div class="card"><h3>October 19, 2026</h3><p>TypeSafe AI announced Jev in early access, introducing “System One” as a class of models for fast, structured decisions.</p></div>
+          <div class="card green"><h3>Built around the decision</h3><p>A decision-focused architecture, parallel probability outputs, and training for calibrated decisions instead of generated prose.</p></div>
+        </div>
+        <p class="small">TypeSafe describes Jev as the first System One model. This is the origin of its named class, not a claim that AI classification began with Jev.</p>
+        <p class="source">Sources: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe's Jev announcement</a> · <a href="https://docs.typesafe.ai/introduction">Jev introduction</a></p>
+        <aside class="notes">Attribute the origin claim to TypeSafe's announcement and documentation. Jev is named after William Stanley Jevons. Jev accepts text, including JSON and arrays of text, not images, audio, or video. Microsoft-Decision-1 and OpenAI Decisions are separate offerings, not demonstrated descendants of Jev's weights, architecture, or training recipe.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">The name / Fast, focused judgment</p>
         <h2>Why “System One”?</h2>
         <div class="grid">
           <div class="card green"><h3>System 1: fast judgment</h3><p>“Does this ticket request a refund?”</p><p>A focused determination given the relevant context.</p></div>
@@ -95,7 +136,7 @@
       </section>
 
       <section>
-        <p class="eyebrow">03 / The contract</p>
+        <p class="eyebrow">The contract / Evidence to action</p>
         <h2>Replace “write an answer” with a question</h2>
         <div class="flow" aria-label="State and questions go to a decision model, then typed answers go to application policy">
           <div class="card">State +<br>typed questions</div><span class="arrow" aria-hidden="true">→</span>
@@ -112,7 +153,7 @@
       </section>
 
       <section>
-        <p class="eyebrow">04 / Question one</p>
+        <p class="eyebrow">Question 1 of 3 / Predicate</p>
         <h2>Predicate / Noul: “Is this true?”</h2>
         <div class="grid">
           <div class="card"><h3>Express eligibility</h3><p>“Is this order eligible for express fulfillment based on inventory, destination, and risk?”</p></div>
@@ -125,7 +166,7 @@
       </section>
 
       <section>
-        <p class="eyebrow">05 / Question two</p>
+        <p class="eyebrow">Question 2 of 3 / Choice</p>
         <h2>Choice: “Which option fits?”</h2>
         <p>“Which fulfillment action best fits the available inventory and delivery requirements?”</p>
         <table>
@@ -143,7 +184,7 @@
       </section>
 
       <section>
-        <p class="eyebrow">06 / Question three</p>
+        <p class="eyebrow">Question 3 of 3 / Score</p>
         <h2>Score: “How much, on this rubric?”</h2>
         <p>Define an <strong>ordered</strong> scale, not a vague “rate this out of ten.”</p>
         <table>
@@ -155,13 +196,13 @@
             <tr><td>3</td><td>Critical: commitment immediately at risk</td><td>0.20</td></tr>
           </tbody>
         </table>
-        <div class="callout"><strong>Score = Σ index × probability = 1.95</strong><br>For OpenAI Decisions and Microsoft-Decision-1, a score can fall between levels.</div>
-        <p class="source">Sources: <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI score semantics</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft score semantics</a>. Synthetic values.</p>
+        <div class="callout"><strong>Score = Σ index × probability = 1.95</strong><br>A weighted position on this 0–3 scale, not a 65% chance of urgency.</div>
+        <p class="source">Sources: <a href="https://docs.typesafe.ai/primitives/score.md">Jev score</a> · <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI score</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft score</a>. Synthetic values.</p>
         <aside class="notes">The arithmetic is 0 times .05 plus 1 times .15 plus 2 times .60 plus 3 times .20, or 1.95. The scale runs from zero to three, not zero to one hundred. A score is not the probability that a condition is true. Treat it as rubric-based ordering, not an absolute measurement of urgency.</aside>
       </section>
 
       <section>
-        <p class="eyebrow">07 / Inside Jev: inference</p>
+        <p class="eyebrow">How they work / Jev's published inference approach</p>
         <h2>Parallel decisions, not a paragraph</h2>
         <div class="grid">
           <div class="card"><h3>Generative response</h3><p>Produce successive text tokens, each conditioned on earlier tokens. Parse the output if your code needs a decision.</p></div>
@@ -174,7 +215,7 @@
       </section>
 
       <section>
-        <p class="eyebrow">08 / Inside Jev: training</p>
+        <p class="eyebrow">How they learn / Decisions and calibration</p>
         <h2>Optimize the uncertainty, too</h2>
         <div class="three grid">
           <div class="card"><h3>RLHF</h3><p>Human feedback: optimize responses people prefer.</p></div>
@@ -188,7 +229,65 @@
       </section>
 
       <section>
-        <p class="eyebrow">09 / The Foundry examples</p>
+        <p class="eyebrow">Why fast / Less output work on the critical path</p>
+        <h2>Decide instead of writing the decision</h2>
+        <div class="three grid">
+          <div class="card"><h3>Bounded outputs</h3><p>Evaluate defined outcomes instead of generating a paragraph and then extracting a judgment.</p></div>
+          <div class="card green"><h3>Parallel evaluation</h3><p>Jev outputs probabilities in parallel, rather than producing text tokens one after another.</p></div>
+          <div class="card"><h3>Fewer round trips</h3><p>Ask independent questions about the same evidence together instead of making a series of API calls.</p></div>
+        </div>
+        <div class="callout">OpenAI documents “about 10x faster” than its Responses API. This is a vendor claim, not a cross-vendor benchmark or a latency guarantee.</div>
+        <p class="small">Input length, question count, model, load, and network location still matter. Measure end-to-end p50/p95 latency and decision quality on your workload.</p>
+        <p class="source">Sources: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">Jev's parallel sampler</a> · <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI speed claim</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Foundry locality guidance</a></p>
+        <aside class="notes">The speed explanation is about avoiding autoregressive output work and serial orchestration, not eliminating the cost of reading context. Parallel inference is documented for Jev; do not ascribe the same implementation to every decision API. Jev's launch also advertises much larger speedups under selected conditions, but they are not comparable to OpenAI's claim. No benchmark was run for this presentation. Related questions that need an earlier answer require a later call.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">Economics / What cheaper judgments unlock</p>
+        <h2>Same routing question. Different costs.</h2>
+        <p class="small">Task: “Which team should handle this ticket?” Assume <strong>1,000 billable input tokens</strong> per request, including evidence and instructions. Generative calls return only the category in <strong>20 output tokens</strong>, with reasoning disabled.</p>
+        <table aria-label="Illustrative cost for one million ticket-routing decisions">
+          <thead><tr><th>Model and use</th><th>Input / 1M tokens</th><th>Output / 1M tokens</th><th>1M decisions</th></tr></thead>
+          <tbody>
+            <tr><td>GPT-6 Sol / generative Responses</td><td>$2.00</td><td>$10.00</td><td><strong>$2,200</strong></td></tr>
+            <tr><td>GPT-6 Luna / generative Responses</td><td>$0.10</td><td>$0.50</td><td><strong>$110</strong></td></tr>
+            <tr><td>Jev 1.14 / decision model</td><td>$0.042</td><td>Free typed output</td><td><strong>$42</strong></td></tr>
+          </tbody>
+        </table>
+        <p class="small">Cost = input tokens × input rate + output tokens × output rate, divided by 1M. At this volume: 1B input tokens, plus 20M generated output tokens for Responses.</p>
+        <div class="callout"><strong>What this unlocks:</strong> evaluate every event instead of sampling; check more independent dimensions; reserve expensive reasoning and human review for ambiguous cases.</div>
+        <p class="small">Jev is about <strong>2.6× cheaper than the efficient generative baseline</strong> here, not universally 50× cheaper. USD standard uncached list rates, checked Oct 27, 2026; no batch discounts, retries, tools, or taxes. Assumed token counts, not measured quality-equivalent results.</p>
+        <p class="source">Pricing: <a href="https://developers.openai.com/api/docs/pricing">OpenAI standard rates</a> · <a href="https://docs.typesafe.ai/models.md">Jev models and input-only billing</a></p>
+        <aside class="notes">Arithmetic per call: Sol = (1000 × 2 + 20 × 10) / 1,000,000 = $0.0022. Luna = (1000 × 0.10 + 20 × 0.50) / 1,000,000 = $0.00011. Jev = 1000 × 0.042 / 1,000,000 = $0.000042. Multiply by one million requests for the table. The budget ratio versus Luna is 110/42 = 2.619, or about 61.8% less inference spend. Sol is a more capable general-purpose baseline, not the cheapest way to classify; that is why the efficient Luna baseline is included. Luna also powers OpenAI Decisions, but this row specifically prices its generative Responses mode with reasoning.effort none, not the Decisions API. Jev still returns serialized JSON, but does not charge output tokens. The same ticket, policy, and allowed categories are the semantic task; equal assumed billable counts do not imply identical tokenizers or equivalent accuracy. No long rationale is added just to inflate the generative cost. Compare error cost, calibration, retries, engineering, and human escalation before switching. More checks also add question-input tokens, so they are not free. Prices here are direct-provider list prices, not an Azure pricing quote.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">Another option / Microsoft-Decision-1</p>
+        <h2>A decision model in Microsoft Foundry</h2>
+        <div class="grid">
+          <div class="card"><h3>What it does</h3><p>Judges text or JSON for classification, routing, ranking, grading, and binary decisions. Returns numbers and probabilities, not a written rationale.</p></div>
+          <div class="card green"><h3>How you call it</h3><p>Send <code>state</code> and a named <code>questions</code> object. Use <code>noul</code>, <code>choice</code>, or <code>score</code>.</p></div>
+        </div>
+        <div class="callout"><code>POST /providers/microsoft/v1/systemone</code><br>The <code>model</code> field is your Foundry deployment name.</div>
+        <p class="source">Source: <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Deploy and use Microsoft-Decision-1</a></p>
+        <aside class="notes">Microsoft-Decision-1 is a model offering, not the name of the OpenAI API. Availability depends on deployment and region. Its similar question vocabulary does not prove common lineage or implementation with Jev. Use the resource endpoint and authentication described in the deployment guide.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">Another option / OpenAI Decisions API</p>
+        <h2>A purpose-built API for judgments</h2>
+        <div class="grid">
+          <div class="card"><h3>What it does</h3><p>Evaluates text, images, and JSON. Returns a predicate probability, a choice, or a score with a distribution over levels.</p></div>
+          <div class="card green"><h3>How you call it</h3><p>Send <code>input</code> and a <code>questions</code> array. Each question has a <code>name</code> and a type.</p></div>
+        </div>
+        <div class="callout"><code>POST /v1/decisions</code> on OpenAI<br><code>POST /openai/v1/decisions</code> on a Foundry resource</div>
+        <p class="small">Current OpenAI guide: <code>gpt-6-luna</code>. Confirm the model or deployment required by your endpoint. Use Responses for generated content or custom-schema extraction.</p>
+        <p class="source">Sources: <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions guide</a> · <a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/azure-openai-decisions-api-now-generally-available-in-microsoft-foundry/4567265">Availability in Foundry</a></p>
+        <aside class="notes">OpenAI Decisions is an API surface backed by a supported model, not an architecture name. The local collection uses the Azure route. Jev and Microsoft-Decision-1 documentation here describe text and JSON, so image support should not be generalized to all three options.</aside>
+      </section>
+
+      <section>
+        <p class="eyebrow">API map / Similar concepts, different schemas</p>
         <h2>Similar questions. Different contracts.</h2>
         <table>
           <thead><tr><th>Surface</th><th>OpenAI Decisions</th><th>Microsoft-Decision-1</th></tr></thead>
@@ -200,67 +299,265 @@
             <tr><td>Choice / score options</td><td><code>choices</code> / <code>levels</code></td><td><code>criteria</code></td></tr>
           </tbody>
         </table>
-        <p class="small">The local OpenAI collection uses <code>gpt-6-luna</code>; the Microsoft collection uses your deployment name. Verify availability before running.</p>
+        <p class="small">The next five slides pair complete request bodies with illustrative response excerpts (synthetic values, not live API results). Paths are relative to your Foundry resource host. Add authentication and <code>Content-Type: application/json</code>; see the setup guide.</p>
         <p class="source">Explore: <a href="./openai-decisions.http">openai-decisions.http</a> · <a href="./microsoft-decision-1.http">microsoft-decision-1.http</a> · <a href="./README.md">setup guide</a></p>
         <aside class="notes">These examples share scenarios, not interchangeable schemas. Model names and availability can change. Microsoft-Decision-1 is a model; OpenAI Decisions is an API surface. A similar API contract is not evidence of common model lineage. The HTTP files currently have masked Authorization placeholders: setting their apiKey variables alone does not authenticate them.</aside>
       </section>
 
-      <section>
-        <p class="eyebrow">10 / Example: OpenAI Decisions</p>
-        <h2>One predicate, one request</h2>
-<pre><code class="language-http">POST {{baseUrl}}/decisions
-
-{
-  "model": "gpt-6-luna",
-  "input": "Order #A104: VIP customer, paid $240, express delivery requested, 2 units in stock at nearby warehouse, destination within express service area, no fraud indicators.",
-  "questions": [
-    {
-      "type": "predicate",
-      "name": "express_eligible",
-      "instructions": "Is this order eligible for express fulfillment based on inventory, destination, and risk?"
-    }
-  ]
-}</code></pre>
-        <p>Expect a <strong>probability</strong> for <code>express_eligible</code>; your code decides the threshold.</p>
-        <p class="source">From <a href="./openai-decisions.http">openai-decisions.http</a>, request 1. Authentication and response omitted; see <a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions guide</a>.</p>
-        <aside class="notes">This is the first request in the local OpenAI collection. The endpoint is under the Foundry resource's /openai/v1 base URL. Note the questions array and the predicate type name. Run the request live if you have a deployment; otherwise discuss the shape only.</aside>
-      </section>
-
-      <section>
-        <p class="eyebrow">11 / Example: Microsoft-Decision-1</p>
-        <h2>The same predicate, different contract</h2>
-<pre><code class="language-http">POST {{baseUrl}}/providers/microsoft/v1/systemone
+      <section class="request">
+        <p class="eyebrow">Sample request 1 of 5 / Microsoft-Decision-1 / Predicate</p>
+        <h2>Is express fulfillment possible?</h2>
+        <div class="request-pair">
+          <div><h3>Request</h3>
+<pre><code class="language-http">POST /providers/microsoft/v1/systemone
 
 {
   "model": "{{deployment}}",
-  "state": "Order #A104: VIP customer, paid $240, express delivery requested, 2 units in stock at nearby warehouse, destination within express service area, no fraud indicators.",
+  "state": "Order A104: express requested; 2 units nearby; destination in express area; no fraud indicators.",
   "questions": {
     "express_eligible": {
       "type": "noul",
-      "instructions": "Is this order eligible for express fulfillment based on inventory, destination, and risk?"
+      "instructions": "Is express fulfillment supported by inventory, destination, and risk?"
     }
   }
 }</code></pre>
-        <p>Expect a <strong>probability from 0 to 1</strong> under <code>answers.express_eligible</code>.</p>
-        <p class="source">From <a href="./microsoft-decision-1.http">microsoft-decision-1.http</a>, request 1. Authentication and response omitted; see the <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft-Decision-1 guide</a>.</p>
-        <aside class="notes">Compare line by line with the previous slide: state instead of input, a questions object keyed by name, and noul instead of predicate. The model value is your deployment name. The Learn guide says the response answers object uses your question names.</aside>
-      </section>
-
-      <section>
-        <p class="eyebrow">12 / Compose judgments</p>
-        <h2>One incident. Several atomic questions.</h2>
-        <p class="small">Checkout errors at 38%; connection pool at 99%; a recent deploy; rollback requires approval.</p>
-        <div class="grid">
-          <div class="card"><h3>Ask the model</h3><p>Is production affected?<br>Is rollback supported by evidence?<br>Which specialist should diagnose?<br>How severe is the impact?</p></div>
-          <div class="card green"><h3>Keep in code</h3><p>Enforce approval rules.<br>Apply evaluated thresholds.<br>Escalate uncertain results.<br>Log the evidence and outcome.</p></div>
+          </div>
+          <div class="response"><h3>Illustrative response excerpt</h3>
+<pre><code class="language-json">{
+  "answers": {
+    "express_eligible": {
+      "type": "noul",
+      "noul": 0.96
+    }
+  }
+}</code></pre>
+          </div>
         </div>
-        <div class="callout">A recent deployment is evidence to investigate, not proof that rollback is the correct action.</div>
-        <p class="source">Local walkthrough: request 5 in <a href="./microsoft-decision-1.http">Microsoft-Decision-1</a> and <a href="./openai-decisions.http">OpenAI Decisions</a>.</p>
-        <aside class="notes">Invite the audience to distinguish evidence, judgment, and permission. A model can recommend inspecting database metrics without having database credentials. Policy constraints such as human approval should remain hard checks, not optional natural-language suggestions.</aside>
+        <p class="small"><strong>Read:</strong> a probability under <code>answers.express_eligible</code>.<br><strong>Act:</strong> apply an evaluated threshold, then verify inventory and permissions in code.</p>
+        <p class="source">Adapted from request 1 in <a href="./microsoft-decision-1.http">Microsoft examples</a>. Synthetic response values; model and usage metadata omitted.</p>
+        <aside class="notes">Predicate asks one true-or-false condition. In this API its type is noul; OpenAI calls the same concept predicate. The answer is a probability, not a shipping command. A model's interpretation of inventory evidence does not replace checking current inventory before fulfillment.</aside>
+      </section>
+
+      <section class="request">
+        <p class="eyebrow">Sample request 2 of 5 / OpenAI Decisions / Choice</p>
+        <h2>Which fulfillment route fits?</h2>
+        <div class="request-pair">
+          <div><h3>Request</h3>
+<pre><code class="language-http">POST /openai/v1/decisions
+
+{
+  "model": "gpt-6-luna",
+  "input": "Express requested. Nearby warehouse: 2 units. Distant: 20. Destination in express area.",
+  "questions": [{
+    "type": "choice", "name": "fulfillment_action",
+    "instructions": "Select the route that best meets inventory and delivery requirements.",
+    "choices": [
+      {"value": "nearby_express", "description": "Nearby warehouse, express"},
+      {"value": "distant_standard", "description": "Distant warehouse, standard"},
+      {"value": "backorder", "description": "Wait for restocking"},
+      {"value": "manual_review", "description": "Human fulfillment review"}
+    ]
+  }]
+}</code></pre>
+          </div>
+          <div class="response"><h3>Illustrative response excerpt</h3>
+<pre><code class="language-json">{
+  "answers": [{
+    "type": "choice",
+    "name": "fulfillment_action",
+    "choice": "nearby_express",
+    "probabilities": [
+      {"value": "nearby_express",
+       "probability": 0.76},
+      {"value": "distant_standard",
+       "probability": 0.14},
+      {"value": "backorder",
+       "probability": 0.03},
+      {"value": "manual_review",
+       "probability": 0.07}
+    ]
+  }]
+}</code></pre>
+          </div>
+        </div>
+        <p class="small"><strong>Read:</strong> the selected option and its distribution.<br><strong>Act:</strong> route or escalate; an allowed option can still be the wrong decision.</p>
+        <p class="source">Adapted from request 2 in <a href="./openai-decisions.http">OpenAI examples</a>. Synthetic response values; confidence and metadata omitted.</p>
+        <aside class="notes">Point out the input field, named questions array, and choices array with value and description. These payload fields are different from Microsoft's criteria object. The manual-review option makes escalation expressible but does not guarantee that the model will select it when appropriate.</aside>
+      </section>
+
+      <section class="request">
+        <p class="eyebrow">Sample request 3 of 5 / Microsoft-Decision-1 / Score</p>
+        <h2>How urgent is this order?</h2>
+        <div class="request-pair">
+          <div><h3>Request</h3>
+<pre><code class="language-http">POST /providers/microsoft/v1/systemone
+
+{
+  "model": "{{deployment}}",
+  "state": "VIP order: express promised tomorrow; shipping cutoff in 45 minutes; stock available.",
+  "questions": {
+    "urgency": {
+      "type": "score",
+      "instructions": "Rate fulfillment urgency from lowest to highest.",
+      "criteria": [
+        "Low: no time pressure",
+        "Normal: routine shipment",
+        "High: short time until shipping cutoff",
+        "Critical: immediate action needed to avoid missing a commitment"
+      ]
+    }
+  }
+}</code></pre>
+          </div>
+          <div class="response"><h3>Illustrative response excerpt</h3>
+<pre><code class="language-json">{
+  "answers": {
+    "urgency": {
+      "type": "score",
+      "score": 1.95,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.15,
+        "2": 0.60,
+        "3": 0.20
+      }
+    }
+  }
+}</code></pre>
+          </div>
+        </div>
+        <p class="small"><strong>Read:</strong> a score on the 0–3 scale plus level probabilities.<br><strong>Act:</strong> prioritize a queue using a tested rubric, not a universal urgency unit.</p>
+        <p class="source">Adapted from request 3 in <a href="./microsoft-decision-1.http">Microsoft examples</a>. Synthetic response; confidence, legend, and metadata omitted.</p>
+        <aside class="notes">Distinguish score from choice: there is an order and the returned value may be between levels. Clear anchors matter more than calling a number high or low. Changing the rubric changes the meaning of the score.</aside>
+      </section>
+
+      <section class="request dense">
+        <p class="eyebrow">Sample request 4 of 5 / OpenAI Decisions / Mixed questions</p>
+        <h2>Separate risk, action, and logistics</h2>
+        <div class="request-pair">
+          <div><h3>Request</h3>
+<pre><code class="language-http">POST /openai/v1/decisions
+
+{
+  "model": "gpt-6-luna",
+  "input": "First-time buyer; $1,800 electronics; billing/shipping differ; stock only distant; delivery promised in 24h.",
+  "questions": [
+    {"type": "predicate", "name": "needs_fraud_review",
+     "instructions": "Do the risk indicators warrant fraud review?"},
+    {"type": "choice", "name": "next_action",
+     "instructions": "Choose the next action supported by the evidence.",
+     "choices": [
+       {"value": "ship", "description": "Release for shipping"},
+       {"value": "verify", "description": "Request customer verification"},
+       {"value": "review", "description": "Human risk review"},
+       {"value": "hold", "description": "Temporarily hold fulfillment"}]},
+    {"type": "score", "name": "fulfillment_risk",
+     "instructions": "Rate logistics failure risk, not fraud, low to high.",
+     "levels": [
+       {"label": "Minimal", "description": "All logistics constraints met"},
+       {"label": "Low", "description": "Minor uncertainty"},
+       {"label": "Elevated", "description": "Delivery may be missed"},
+       {"label": "Severe", "description": "Strong evidence delivery cannot be met"}]}
+  ]
+}</code></pre>
+          </div>
+          <div class="response"><h3>Illustrative response excerpt</h3>
+<pre><code class="language-json">{
+  "answers": [
+    {"type": "predicate",
+     "name": "needs_fraud_review",
+     "probability": 0.91},
+    {"type": "choice",
+     "name": "next_action",
+     "choice": "review",
+     "probabilities": [
+       {"value": "ship", "probability": 0.02},
+       {"value": "verify", "probability": 0.20},
+       {"value": "review", "probability": 0.65},
+       {"value": "hold", "probability": 0.13}]},
+    {"type": "score",
+     "name": "fulfillment_risk", "score": 2.45,
+     "probabilities": [
+       {"value": 0, "label": "Minimal",
+        "probability": 0.02},
+       {"value": 1, "label": "Low",
+        "probability": 0.08},
+       {"value": 2, "label": "Elevated",
+        "probability": 0.33},
+       {"value": 3, "label": "Severe",
+        "probability": 0.57}]}
+  ]
+}</code></pre>
+          </div>
+        </div>
+        <p class="small"><strong>Act:</strong> combine the judgments in code. The action question does not consume the other answers.</p>
+        <p class="source">Adapted from request 4 in <a href="./openai-decisions.http">OpenAI examples</a>. Synthetic response values; confidence and metadata omitted.</p>
+        <aside class="notes">Fraud risk and logistics risk are not the same quantity. Questions in a shared request are not a sequential reasoning chain. If choosing an action requires the returned fraud probability, first obtain that probability, then apply code or issue a follow-up call. A mismatch between addresses is a risk indicator, not proof of fraud.</aside>
+      </section>
+
+      <section class="request dense">
+        <p class="eyebrow">Sample request 5 of 5 / Microsoft-Decision-1 / Incident triage</p>
+        <h2>Diagnose before remediating</h2>
+        <div class="request-pair">
+          <div><h3>Request</h3>
+<pre><code class="language-http">POST /providers/microsoft/v1/systemone
+
+{
+  "model": "{{deployment}}",
+  "state": "Checkout 500 errors: 38% for 12 min; DB pool: 99%; CPU normal; deploy 15 min ago; cause unknown; revenue impacted. Rollback needs human approval.",
+  "questions": {
+    "production_impact": {"type": "noul",
+      "instructions": "Is there active customer-facing production impact?"},
+    "enough_evidence_for_rollback": {"type": "noul",
+      "instructions": "Is rollback established as correct without investigation?"},
+    "specialist": {"type": "choice",
+      "instructions": "Who should lead diagnosis?",
+      "criteria": {"application": "Application/deployment specialist",
+        "database": "Database/connection specialist", "other": "Incident commander"}},
+    "agent_next_step": {"type": "choice",
+      "instructions": "Choose a safe diagnostic step, not remediation.",
+      "criteria": {"inspect_deploy": "Inspect deployment changes",
+        "inspect_db": "Inspect DB pool metrics", "escalate": "Escalate to on-call"}},
+    "severity": {"type": "score",
+      "instructions": "Rate business severity from least to most severe.",
+      "criteria": ["Negligible", "Minor degradation", "Significant disruption",
+        "Major outage", "Widespread critical emergency"]}
+  }
+}</code></pre>
+          </div>
+          <div class="response"><h3>Illustrative response excerpt</h3>
+<pre><code class="language-json">{
+  "answers": {
+    "production_impact": {
+      "type": "noul", "noul": 0.99},
+    "enough_evidence_for_rollback": {
+      "type": "noul", "noul": 0.18},
+    "specialist": {
+      "type": "choice", "choice": "database",
+      "probabilities": {
+        "application": 0.18,
+        "database": 0.72, "other": 0.10}},
+    "agent_next_step": {
+      "type": "choice", "choice": "inspect_db",
+      "probabilities": {
+        "inspect_deploy": 0.18,
+        "inspect_db": 0.76, "escalate": 0.06}},
+    "severity": {
+      "type": "score", "score": 3.04,
+      "probabilities": {
+        "0": 0.00, "1": 0.01,
+        "2": 0.09, "3": 0.75, "4": 0.15}}
+  }
+}</code></pre>
+          </div>
+        </div>
+        <p class="small"><strong>Act:</strong> gather evidence and route diagnosis. A recent deploy does not prove causation; enforce approval outside the model.</p>
+        <p class="source">Adapted from request 5 in <a href="./microsoft-decision-1.http">Microsoft examples</a>; options shortened. Synthetic response; confidence, legend, and metadata omitted.</p>
+        <aside class="notes">This is an advisory classification request, not a tool execution request. Ask the audience to distinguish observed impact, causal evidence, suggested diagnosis, and permission to remediate. Approval must be a deterministic gate even if the model recommends rollback.</aside>
       </section>
 
       <section>
-        <p class="eyebrow">13 / Put it to work</p>
+        <p class="eyebrow">Put it to work / Keep control in code</p>
         <h2>Typed does not mean true</h2>
         <ul>
           <li><strong>Define:</strong> atomic questions, complete options, concrete rubrics.</li>
@@ -274,14 +571,16 @@
       </section>
 
       <section>
-        <p class="eyebrow">14 / Keep exploring</p>
-        <h2>Read. Run. Compare.</h2>
+        <p class="eyebrow">References / Read, run, compare</p>
+        <h2>Sources and further reading</h2>
         <ul class="references">
           <li><a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe: Introducing System One Models &amp; Jev</a></li>
           <li><a href="https://docs.typesafe.ai/concepts/system-one.md">System One concepts</a> · <a href="https://docs.typesafe.ai/introduction/machine-learning-primer.md">RLCD and calibration primer</a></li>
+          <li>Jev primitives: <a href="https://docs.typesafe.ai/primitives/noul.md">Noul</a> · <a href="https://docs.typesafe.ai/primitives/choice.md">Choice</a> · <a href="https://docs.typesafe.ai/primitives/score.md">Score</a></li>
           <li><a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/azure-openai-decisions-api-now-generally-available-in-microsoft-foundry/4567265">Azure OpenAI Decisions API: Now generally available in Microsoft Foundry</a></li>
           <li><a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-microsoft-decision-1-in-microsoft-foundry-for-decision-and-classific/4562742">Introducing Microsoft-Decision-1 in Microsoft Foundry for decision and classification workloads</a></li>
           <li><a href="https://developers.openai.com/api/docs/guides/decisions">OpenAI Decisions guide</a> · <a href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision">Microsoft-Decision-1 guide</a></li>
+          <li>Economics: <a href="https://docs.typesafe.ai/models.md">Jev prices and billing</a> · <a href="https://developers.openai.com/api/docs/pricing">OpenAI prices</a> · <a href="https://developers.openai.com/api/docs/models/gpt-6-sol">GPT-6 Sol</a> · <a href="https://developers.openai.com/api/docs/models/gpt-6-luna">GPT-6 Luna</a></li>
           <li><a href="./README.md">Local setup</a> · <a href="./openai-decisions.http">OpenAI requests</a> · <a href="./microsoft-decision-1.http">Microsoft requests</a></li>
         </ul>
         <p class="small">Built with <a href="https://revealjs.com/">Reveal.js</a>. All example probabilities are illustrative, not benchmark results.</p>

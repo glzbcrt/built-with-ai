@@ -13,13 +13,17 @@ than generating free-form text.
 
 The deck covers:
 
-- **Jev:** TypeSafe AI's first System One model, used as the starting point to explain what decision models are and why the "System One" name refers to fast, focused judgments.
+- **Decision models first:** what bounded, typed judgments are and how they differ from generating a conversational response.
+- **Dedicated use-case slide (slide 3):** routing, prioritization, review flags, output evaluation, workflow guidance, and content organization.
+- **Origins:** Jev's October 19, 2026 announcement introduced TypeSafe AI's System One class; this is not a claim that classification itself began with Jev.
 - **Question types:** true/false predicates (`predicate` or `noul`), choices, and scores, including how probabilities are returned and how scores are computed.
-- **How they work:** published concepts such as parallel evaluation of questions and training for calibrated decisions, clearly separated from details that have not been disclosed.
+- **How they work and why they are fast:** bounded outputs, Jev's parallel probability evaluation, fewer sequential calls, and training for calibrated decisions. Vendor speed claims are attributed, not presented as cross-vendor benchmarks.
+- **Economics and what it unlocks:** the same ticket-routing task priced with published direct-provider USD rates for GPT-6 Sol and GPT-6 Luna in generative Responses mode versus Jev 1.14. Assuming 1,000 input tokens per call and 20 generated output tokens with reasoning disabled, one million calls cost $2,200, $110, and $42 respectively. These are illustrative inference-cost calculations, not measured accuracy-equivalent results or Azure quotes; rates and assumptions are cited on the slide.
 - **Microsoft-Decision-1:** the Microsoft Foundry decision model, called through `POST /providers/microsoft/v1/systemone` with a `state` and a `questions` object.
 - **OpenAI Decisions API:** the Azure OpenAI decisions endpoint, called through `POST /openai/v1/decisions` with an `input` and a `questions` array.
-- **Side-by-side examples:** the same order-eligibility request in both APIs, a schema comparison, and an incident-response walkthrough.
+- **Five request/response pairs:** express eligibility (Microsoft predicate), fulfillment routing (OpenAI choice), urgency (Microsoft score), combined order decisions (OpenAI), and incident triage (Microsoft). Each slide shows a complete request body beside an illustrative response excerpt. Requests use shortened context and some shortened option sets; authentication is omitted and setup is linked. Response values are synthetic, not captured from API calls; omitted fields are identified on each slide.
 - **Practical guidance:** composing atomic questions in code, setting thresholds, and keeping policy checks and human approval outside the model.
+- **References:** primary documentation, launch announcements, primitive definitions, and the local request collections close the deck.
 
 Jev is a TypeSafe AI model; Microsoft-Decision-1 and the OpenAI Decisions API are separate offerings. The deck does not claim they share an architecture or training method.
 
